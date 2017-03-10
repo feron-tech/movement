@@ -1,6 +1,6 @@
 ## Welcome to the _movement_ project code repository.
 
-This repository hosts the outcomes of project MOVEMENT, a project developing open source extensions and experiments for the [EU H2020 MONROE Platform](https://www.monroe-project.eu/), as part of Open Call 1. MOVEMENT is carried out by [Feron Technologies P.C.](http://www.feron-tech.com) and [COSMOTE/OTE Group](http://www.comsote.gr). 
+This repository hosts the outcomes of project MOVEMENT, a project developing open source extensions and experiments for the [EU H2020 MONROE Platform](https://www.monroe-project.eu/), as part of Open Call 1. MOVEMENT is carried out by [Feron Technologies P.C.](http://www.feron-tech.com) and [COSMOTE/OTE Group](http://www.comsote.gr).
 The repository contains a set of sub-projects/experiments for measuring the quality of live or experimental mobile data networks (3G/4G/4G+). These experiments may be executed either at remote MONROE nodes or locally at any linux-based host equipped with mobile broadband devices (e.g. Wi-Fi/4G USB dongle, Mi-Fi, etc.).
 
 ### List of supported and upcoming extensions
@@ -65,7 +65,7 @@ The configuration includes 3 groups of parameters:
 * ```iperfServerfPort```  : the port where the Server listens to (default: ```5201```)
 * ```iperfTimeToRun```    : the duration of the test (e.g. ```5```, ```10```, etc.)
 
-In order to execute iperf3 tests, an iperf3 server needs to be deployed. A list of publicly available servers (e.g. ```iperf.volia.net```) as well as instructions for deploying a private server may be found [here](https://iperf.fr/iperf-servers.php) and [here](https://iperf.fr/iperf-download.php#ubuntu). 
+In order to execute iperf3 tests, an iperf3 server needs to be deployed. A list of publicly available servers (e.g. ```iperf.volia.net```) as well as instructions for deploying a private server may be found [here](https://iperf.fr/iperf-servers.php) and [here](https://iperf.fr/iperf-download.php#ubuntu).
 
 ###### SPEEDTEST
 * ```speedtestServer``` : the public/private speedtest server IP/URL. A list of publicly available speedtest servers may be found in [this link](https://www.speedtest.net/speedtest-servers.php) (e.g. speedtest.otenet.gr), whereas instructions for how to setup a private Speedtest server may be found [here](http://www.tecmint.com/speedtest-mini-server-to-test-bandwidth-speed/).
@@ -73,13 +73,13 @@ In order to execute iperf3 tests, an iperf3 server needs to be deployed. A list 
 ###### HTTP File Transfer
 * ```curlTimeout``` : The duration of HTTP transfer in seconds (e.g. ```5```, ```10```). The file size is considered large enough such that the transfer is not completed before timeout expires. When the timeout expires the average transfer speed is calculated. If the transfer is completed before the expiration of the timeout interval, the results are dropped. By keeping the transfer time fixed (and not keeping the file size fixed) we provide a fair comparison between technologies with large speed differentiation, for example 3G vs 4G (refer to ETSI TR 102 678 V1.1.1 (2009-11) for a discussion on this issue).
 * For HTTP GET (File Download):
-  * ```curlRemoteFile``` : the complete URL of the file to be downloaded. One could use either a publicly available URL or deploy a private HTTP Server (e.g. Apache2) and host a target file. 
+  * ```curlRemoteFile``` : the complete URL of the file to be downloaded. One could use either a publicly available URL or deploy a private HTTP Server (e.g. Apache2) and host a target file.
 * For HTTP POST (File Upload):
   * ```curlLocalFile``` : the full path of the local file to be uploaded.
   * ```curlServerResponseURL``` : the server-side app managing the file uploading. There are plenty of approaches for developing such server-side functionality. In our implementation we use a cgi/python-based script, loaded into an Apache2 HTTP server, for which CGI scripting have to be enabled first. The script is also provided in the repository ([benchmarking/files/http-server/save_file.py](benchmarking/files/http-server/save_file.py).
   * ```curlUsername```          : HTTP POST authentication username. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
   * ```curlPassword```          : HTTP POST authentication password. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
-Detailed instructions on how to configure the server side can be found at the end of the documentation. A 50 MB file which can be used for uploading is also provided in the repository ([benchmarking/files/jellyfish-15-mbps-hd-h264.mkv](benchmarking/files/jellyfish-15-mbps-hd-h264.mkv).
+Detailed instructions on how to configure the server side can be found at the end of the documentation. A 20 MB file which can be used for uploading is also provided in the repository ([benchmarking/files/jellyfish-5-mbps-hd-h264](benchmarking/files/jellyfish-5-mbps-hd-h264).
 
 ##### General Parameters
 * ```acceptable_ifaces``` : the list of measured network interfaces (e.g. ```eth0```, ```op0```, etc.). This will be cross-checked with the list of the existing host interfaces at the begin of the experiment, in order to exclude non-present interfaces.
