@@ -27,11 +27,12 @@ import threading   # needed for running metadata retrieval as thread within the 
 # Look at specific interfaces: the list will be cross-checked with the actual interfaces detected in the system.
 acceptable_ifaces       = ['eth0','op0']      # comma-separated list
 # ping configuration
+Nrounds                 = 2 # number of rounds repeating test measurement
 pingServer              = 'google.com' # IP or URL to hit
 pingCount               = 5            # number of ping hits
 # iperf configuration
-iperfServerIPaddr       = 'iperf.volia.net'         # IP or URL where iperf3 server resides
-iperfServerfPort        = 5201                      # port where iperf3 server listens
+iperfServerIPaddr       = '147.102.25.88'         # IP or URL where iperf3 server resides #iperf.volia.net
+iperfServerfPort        = 6666                      # port where iperf3 server listens #5201
 iperfTimeToRun          = 5                         # time duration of iperf3 test
 # speedtest configuration
 speedtestServer     = 'http://speedtest.otenet.gr' #IP or URL where Speedtest Server is Hosted
@@ -40,27 +41,45 @@ curlTimeout             = 5                                                     
 # curl HTTP-GET specific
 curlRemoteFile          = 'http://releases.ubuntu.com/14.04/ubuntu-14.04.5-desktop-amd64.iso' # remote file location for HTTP GET
 # curl HTTP-POST specific
-curlLocalFile           = "/opt/monroe/jellyfish-15-mbps-hd-h264.mkv"                       # local file location for HTTP POST
-curlServerResponseURL   = "http://52.174.152.255/cgi-bin/save_file.py"                      # server-side file upload app
-curlUsername            = "testuser"                                                        # authentication username for file upload
-curlPassword            = "testuser"                                                        # authentication passworkd for file upload
+curlLocalFile           = "/monroe/results/jellyfish_200MB.mkv"                             # local file location for HTTP POST
+curlServerResponseURL   = "http://**.**.**.**/cgi-bin/save_file.py"                         # server-side file upload app
+curlUsername            = "******"                                                          # authentication username for file upload
+curlPassword            = "******"                                                          # authentication passworkd for file upload
+# video-specific
+# video probing specific
+vp_args             = ["--sub-source=marq",                                                 # vlc player parameters
+                       "--vout=none",
+                       "--file-caching=0",
+                       "--disc-caching=0",
+                       "--sout-mux-caching=1500"
+                       ]
+vp_youtube_url      = 'https://youtu.be/WtPkFBbJLMg'                                        # video url
+vp_timeout          = 3600                                                                  # video test duration
+
 # metadata related
+metadataActivateFlag    = True
 zmqport                 = "tcp://172.17.0.1:5556"                               # where to listen
 metadata_topic          = "" # empty string stands for all messages             # subscribe to all messages
 topic_filters           = ["MONROE.META.DEVICE.MODEM","MONROE.META.DEVICE.GPS"] # filter out unwanted
 # filenames to store results
 dataResultsFilename     = 'dataResultsFile.json'                                # file to store data results
 metadataResultsFilename = 'metadataResultsFile.json'                            # file to store metadata results
+temp_dataResultsFilename     = 'temp_dataResultsFile.json'                      # file to store (temp) data results
+temp_metadataResultsFilename = 'temp_metadataResultsFile.json'                  # file to store (temp) metadata results
+# configuration related to storing results to database
 # logging
+temp_logfilename    = 'temp_experimentLogFile.txt'
 logfilename         = 'experimentLogFile.txt'
 
 #-------------------------------------------------------------------------------
 # load local modules
 #------------------------------------------------------------------------------
 # import tests functionality
-from tests import ping_test, iperf3_test, speedtest_test, curl_test
+from tests import ping_test, iperf3_test, speedtest_test, curl_test, video_streaming_probe_test
 # import metadata functionality
 from metadata import retrieve_metadata_thread
+# video streaming probe functionality
+from video.video_streaming_probe import VideoStreamingProbe
 
 #-------------------------------------------------------------------------------
 # setup a logger
@@ -75,7 +94,7 @@ formatter = logging.Formatter("%(message)s") #formatter = logging.Formatter("[%(
 consoleHandler.setFormatter(formatter)
 logger.addHandler(consoleHandler)
 # add file handler in addition to console handler
-fileHandler = logging.FileHandler(os.path.join(os.path.expanduser('~'), logfilename))
+fileHandler = logging.FileHandler(os.path.join('/monroe/results', temp_logfilename))
 logger.addHandler(fileHandler)
 
 
@@ -96,6 +115,14 @@ if inDocker:
     logging.info("I am running within docker")
 else:
     logging.info("I am running in standalone mode (outside docker)")
+
+
+try: # read configuration from node: this is feasible when we run the experiment through the scheduler, and not locally.
+    with open('/monroe/results/nodeid') as nodeidfd:
+        experimentConfig['nodeid'] = nodeidfd.readline().rstrip()
+except Exception as e: # no configuration file, go on with dummy initialization done above
+    logging.info('[Handled Exception] There is no nodeid file: we run through scheduler.')
+    # do nothing
 
 try: # read configuration from node: this is feasible when we run the experiment through the scheduler, and not locally.
     with open('/monroe/config') as configfd:
@@ -120,78 +147,120 @@ logging.info(("Active Ifaces: {}").format(active_ifaces))
 if active_ifaces:
     print('At least 1 active interface found')
 
-    # metadata thread instantiation & start retrieving in the background
-    mdThread = retrieve_metadata_thread(zmqport, metadata_topic, topic_filters, metadataResultsFilename, experimentConfig, logger)
-    #mdThread = retrieve_metadata_thread()
-    mdThread.setDaemon(True)
-    mdThread.start()
+    # get all INET ifaces Gateways
+    gws = netifaces.gateways()
+    gws_INET = gws[netifaces.AF_INET]
+    logging.info(('NetIfaces GWs: {}').format(gws_INET))
+
+    if metadataActivateFlag:
+        # metadata thread instantiation & start retrieving in the background
+        mdThread = retrieve_metadata_thread(zmqport, metadata_topic, topic_filters, temp_metadataResultsFilename, metadataResultsFilename, experimentConfig, logger)
+        #mdThread = retrieve_metadata_thread()
+        mdThread.setDaemon(True)
+        mdThread.start()
 
     # begin core actions
-    with open(os.path.join(os.path.expanduser('~'),'tempDataJSON.txt'), mode='w') as dataResultsFile: # dump json formatted results here
+    with open(os.path.join('/monroe/results',temp_dataResultsFilename), mode='w') as dataResultsFile: # dump json formatted results here
         # initialize the list to store experimental results
         expResultsList = []
+        dataResultsFile.write("[")
         # network usage measurement dictionary
         networkUsage = {}
         for i in active_ifaces:
             networkUsage[i] = {'tx': {'before': -1, 'after': -1}, 'rx': {'before': -1, 'after': -1} }
 
-        # start per iface testing
-        for iface in active_ifaces:
-            print('In Interface {}').format(iface)
-            try:
-                ipaddr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
-                # get network usage before the experiments (in MB)
-                command_line_rx = 'cat /sys/class/net/'+iface+'/statistics/tx_bytes'
-                command_line_tx = 'cat /sys/class/net/'+iface+'/statistics/rx_bytes'
-                networkUsage[iface]['tx']['before'] =  str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2))
-                networkUsage[iface]['rx']['before'] =  str(float(subprocess.check_output(command_line_rx.split(" "),shell=False))/(1000**2))
+        for roundix in range(1,Nrounds+1):
+            # start round
+            logging.info(('///// Round {}/{} /////').format(roundix,Nrounds))
+            # start per iface testing
+            for iface in active_ifaces:
+                logging.info(('In Interface {}').format(iface))
+                try:
+                    ipaddr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+                    # find gateway for current iface
+                    for gws_INET_record in gws_INET:
+                        if iface in gws_INET_record:
+                            gw = gws_INET_record[0]
+                            logging.info(('(IP: {}, Gateway: {})').format(ipaddr,gw))
+                            break
 
-                # Experiments
-                # get current results index
-                resultRecords_old = len(expResultsList)
+                    # actions for setting default gateway
+                    # 1) delete (if any) default gateways
+                    command_line = "ip route del 0/0"
+                    try:
+                        output = subprocess.check_output(command_line.split(" "),shell=False)
+                    except Exception as e:
+                        logger.info(("exception error in ip route del 0/0 {}").format(str(e)))
+                    # 2) add default gateway rule
+                    command_line = "route add default gw " + gw + " " + iface
+                    try:
+                        output = subprocess.check_output(command_line.split(" "),shell=False)
+                    except Exception as e:
+                        logger.info(("exception error in setting up default gateway {}").format(str(e)))
+                    # (optional) print route table
+                    command_line = "route -n"
+                    output = subprocess.check_output(command_line.split(" "),shell=False)
+                    logger.info(("Routing Table :  {}").format(str(output)))
 
-                # PING Experiment
-                expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, pingServer, ipaddr, pingCount, logger))
-                # iperf-upload
-                expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, iperfServerIPaddr, iperfServerfPort, iperfTimeToRun, 'send', ipaddr, logger))
-                # iperf-download
-                expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, iperfServerIPaddr, iperfServerfPort, iperfTimeToRun, 'receive', ipaddr, logger))
-                # speedtest full test (upload, download, ping)
-                expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, speedtestServer, ipaddr, logger))
-                # curl http download (GET)
-                expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, curlRemoteFile, ipaddr, curlTimeout, 'download', logger))
-                # curl http upload (POST)
-                expResultsList.insert(len(expResultsList),curl_test(iface, experimentConfig, curlLocalFile,  ipaddr, curlTimeout, 'upload', logger,curlServerResponseURL, curlUsername, curlPassword))
+                    # get network usage before the experiments (in MB)
+                    command_line_rx = 'cat /sys/class/net/'+iface+'/statistics/tx_bytes'
+                    command_line_tx = 'cat /sys/class/net/'+iface+'/statistics/rx_bytes'
+                    networkUsage[iface]['tx']['before'] =  str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2))
+                    networkUsage[iface]['rx']['before'] =  str(float(subprocess.check_output(command_line_rx.split(" "),shell=False))/(1000**2))
 
+                    # Experiments
+                    # get current results index
+                    resultRecords_old = len(expResultsList)
 
-                # get network usage after the experiments and print to output
-                networkUsage[iface]['tx']['after'] =  str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2))
-                networkUsage[iface]['rx']['after'] =  str(float(subprocess.check_output(command_line_rx.split(" "),shell=False))/(1000**2))
-                logging.info(('\n\tTraffic data consumed for current experiment round: Receive {:.2f} MB / Send {:.2f} MB').format(
-                    float(networkUsage[iface]['tx']['after'])-float(networkUsage[iface]['tx']['before']),
-                    float(networkUsage[iface]['rx']['after'])-float(networkUsage[iface]['rx']['before'])))
+                    # PING Experiment
+                    expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, pingServer, ipaddr, pingCount, logger))
+                    # iperf-upload
+                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, iperfServerIPaddr, iperfServerfPort, iperfTimeToRun, 'send', ipaddr, logger))
+                    # iperf-download
+                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, iperfServerIPaddr, iperfServerfPort, iperfTimeToRun, 'receive', ipaddr, logger))
+                    # speedtest full test (upload, download, ping)
+                    #expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, speedtestServer, ipaddr, logger))
+                    # curl http download (GET)
+                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, curlRemoteFile, ipaddr, curlTimeout, 'download', logger))
+                    # curl http upload (POST)
+                    expResultsList.insert(len(expResultsList),curl_test(iface, experimentConfig, curlLocalFile,  ipaddr, curlTimeout, 'upload', logger,curlServerResponseURL, curlUsername, curlPassword))
+                    # video streaming experiment
+                    expResultsList.insert(len(expResultsList),video_streaming_probe_test( iface, experimentConfig, ipaddr, vp_args, vp_youtube_url, vp_timeout, VideoStreamingProbe,  logger))
 
-                # Write last round results to file
-                for m in expResultsList[resultRecords_old:len(expResultsList)]:
-                    json.dump(m, dataResultsFile, sort_keys=True, indent=4, separators=(',', ': '))
+                    # get network usage after the experiments and print to output
+                    networkUsage[iface]['tx']['after'] =  str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2))
+                    networkUsage[iface]['rx']['after'] =  str(float(subprocess.check_output(command_line_rx.split(" "),shell=False))/(1000**2))
+                    logging.info(('\n\tTraffic data consumed for current experiment round: Receive {:.2f} MB / Send {:.2f} MB').format(
+                        float(networkUsage[iface]['tx']['after'])-float(networkUsage[iface]['tx']['before']),
+                        float(networkUsage[iface]['rx']['after'])-float(networkUsage[iface]['rx']['before'])))
 
-            except Exception as e:
-                print("Error in current Interface testing")
+                    #logging.info(('aaaa'))
+                    # Write last round results to file
+                    for m in expResultsList[resultRecords_old:len(expResultsList)]:
+                        json.dump(m, dataResultsFile, sort_keys=True, indent=4, separators=(',', ': '))
+                        dataResultsFile.write(",\n")
 
+                except Exception as e:
+                    print("Error in current Interface testing")
+        # before closing file
+        dataResultsFile.seek(-2, os.SEEK_END)
+        dataResultsFile.truncate()
+        dataResultsFile.write("]")
 
 #-------------------------------------------------------------------------------
 # finalization actions
 #-------------------------------------------------------------------------------
+#now_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S_")
+now_str = time.strftime("%Y%m%d-%H%M%S_", time.gmtime(time.time()))
 # move result files to target dir
 if active_ifaces: # at least one interface found
-    if inDocker:
-        shutil.copy2(os.path.join(os.path.expanduser('~'),'tempDataJSON.txt'), os.path.join('/monroe/results',dataResultsFilename))
-    else:
-        shutil.copy2(os.path.join(os.path.expanduser('~'),'tempDataJSON.txt'), os.path.join(os.path.expanduser('~'),dataResultsFilename))
+    #shutil.copy2(os.path.join('/monroe/results',temp_dataResultsFilename), os.path.join('/monroe/results',dataResultsFilename))
+    shutil.copy2(os.path.join('/monroe/results',temp_dataResultsFilename), os.path.join('/monroe/results',now_str+dataResultsFilename))
 
     # terminate metadata thread & allow for some time to end thread
-    mdThread.terminate()
-    time.sleep(3)
+    if metadataActivateFlag:
+        mdThread.terminate()
+        time.sleep(3)
 
+shutil.copy2(os.path.join('/monroe/results',temp_logfilename), os.path.join('/monroe/results',now_str+logfilename))
 logging.info('\nExit main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
-shutil.copy2(os.path.join(os.path.expanduser('~'),logfilename), os.path.join('/monroe/results',logfilename))

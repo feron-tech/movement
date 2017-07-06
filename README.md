@@ -4,16 +4,16 @@ This repository hosts the outcomes of project MOVEMENT, a project developing ope
 The repository contains a set of sub-projects/experiments for measuring the quality of live or experimental mobile data networks (3G/4G/4G+). These experiments may be executed either at remote MONROE nodes or locally at any linux-based host equipped with mobile broadband devices (e.g. Wi-Fi/4G USB dongle, Mi-Fi, etc.).
 
 ### List of supported and upcoming extensions
-* Systematic Mobile Data Network Benchmarking based on:
- * ping
- * iperf3 (direct, reverse)
- * speedtest (latency, download and upload speed)
- * HTTP file transfer (GET/POST)
-* Video Streaming Quality (upcoming)
+* Mobile Data Network Benchmarking Tests:
+  * ping
+  * iperf3 (direct, reverse)
+  * speedtest (latency, download and upload speed)
+  * HTTP file transfer (GET/POST)
+* Video Streaming Quality :new:
 * VoIP Quality (upcoming)
 * 4G Offloading through Wi-Fi (upcoming)
 
-### Systematic Mobile Data Benchmarking using MONROE Nodes
+### Systematic Mobile Network Benchmarking using MONROE Nodes
 
 #### Introduction & Code Structure
 The specific software extension enables the automated execution of a set of widely used mobile data network performance tools, in MONROE nodes. The applications allow to characterize latency and throughput. Currently the following standard applications are supported:
@@ -21,6 +21,11 @@ The specific software extension enables the automated execution of a set of wide
 * **iperf3** forward and reverse TCP tests, for measuring  throughput.
 * **speedtest**, for measuring latency, download and upload speed.
 * **HTTP transfer** file download (GET) and upload (POST) using the ```curl``` package, for measuring throughput in both directions.
+* **Video Streaming** :new:, i.e. playing a video from a remote server (youtube or standalone server), for measuring various quality of service and experience indicators. The VLC client has been selected to be the core of our video testing tool, thanks to the availability of an extensive open API/library which exposes various video streaming parameters and performance indicators. Currently, the tool is able to automatically stream both YouTube videos (using a parser) and videos stored to dedicated servers. Various video quality levels (including 1080p) and network caching configurations are being supported. The tool enables the capture of a set of application-level quality of service/experience indicators, such as:
+  * video playback initiation latency,
+  * number of (potential) video stalls,
+  * progress of video playing time vs. the actual time,
+  * application bit-rate.
 
 The extension is developed in Python (python 2 is currently fully tested and validated) and uses the _subprocess_ module to call the external command-line applications. Back-end public or private server applications are required for executing the experiments (e.g. iperf3 server, HTTP server, etc.).
 
@@ -49,10 +54,20 @@ The repository contains also:
 :exclamation: Support for running the application directly in local hosts is provided for ease of validation. In this case, the files containing the results are stored into the ```$HOME``` directory. The application runs as-is for the primary network interface (e.g. eth0, wlan0, wwan0, etc.), by simply calling ```python2 run_tests.py```. However, for multi-interface tests, routing rules need to be applied accordingly (modify the routing tables or create namespaces). For MONROE experiments, the result files are stored in the default ```monroe/results``` location in order to be accessible after the end of the experiment.
 
 #### Configuration
+
+#### Global Configuration
 The configuration includes 3 groups of parameters:
 * A group including a set of parameters that have to be configured per testing application.
 * A group of non application-specific parameters.
 * A group related to metadata retrieval settings.
+
+#### Network Configuration :new:
+Special attention needs to be paid for multi-interface experiments. We provide two means to enforce traffic to be routed to a specific interface:
+* Per-application interface binding: Many command-line tools, such as ```ping```, ```iperf3```, ```curl```, and ```speedtest``` expose explicit interface binding. In this case we use the relevant argument to route traffic.
+* Global traffic routing: In case the application does not expose an explicit interface binding, we configure the routing table appropriately. This is done in three steps:
+  * Retrieve the gateway for a specific interface (using the ```netifaces``` python module)
+  * Delete any default gateway in the system (using the ```subprocess``` module)
+  * Set the interface-specific gateway as default
 
 ##### Application-Specific Parameters
 
@@ -76,10 +91,15 @@ In order to execute iperf3 tests, an iperf3 server needs to be deployed. A list 
   * ```curlRemoteFile``` : the complete URL of the file to be downloaded. One could use either a publicly available URL or deploy a private HTTP Server (e.g. Apache2) and host a target file.
 * For HTTP POST (File Upload):
   * ```curlLocalFile``` : the full path of the local file to be uploaded.
-  * ```curlServerResponseURL``` : the server-side app managing the file uploading. There are plenty of approaches for developing such server-side functionality. In our implementation we use a cgi/python-based script, loaded into an Apache2 HTTP server, for which CGI scripting have to be enabled first. The script is also provided in the repository ([benchmarking/files/http-server/save_file.py](benchmarking/files/http-server/save_file.py).
+  * ```curlServerResponseURL``` : the server-side app managing the file uploading. There are plenty of approaches for developing such server-side functionality. In our implementation we use a cgi/python-based script, loaded into an Apache2 HTTP server, for which CGI scripting have to be enabled first. The script is also provided in the repository ([benchmarking/files/http-server/save_file.py](benchmarking/files/http-server/save_file.py)).
   * ```curlUsername```          : HTTP POST authentication username. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
   * ```curlPassword```          : HTTP POST authentication password. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
-Detailed instructions on how to configure the server side can be found at the end of the documentation. A 20 MB file which can be used for uploading is also provided in the repository ([benchmarking/files/jellyfish-5-mbps-hd-h264](benchmarking/files/jellyfish-5-mbps-hd-h264).
+Detailed instructions on how to configure the server side can be found at the end of the documentation. A 20 MB file which can be used for uploading is also provided in the repository ([benchmarking/files/jellyfish-5-mbps-hd-h264.mkv](benchmarking/files/jellyfish-5-mbps-hd-h264.mkv)).
+
+###### Video Streaming Test
+* ```vp_youtube_url``` : the URL of the video file to play. This could be link to a public Youtube video or to a private video server. For Youtube videos, it seems that the ```1280x720``` resolution is selected by default. For enforcing another resolution, including ```1920x1080```, explicit links from https://www.h3xed.com/blogmedia/youtube-info.php could be used.
+* ```vp_timeout ```    : the maximum duration of the video test. If this is exceeded the test is aborted. This is useful in case that bad channel/network conditions occur and the video stalls indefinitely.
+* ```vp_args  ```      : VLC player configuration, including caching, output, etc.
 
 ##### General Parameters
 * ```acceptable_ifaces``` : the list of measured network interfaces (e.g. ```eth0```, ```op0```, etc.). This will be cross-checked with the list of the existing host interfaces at the begin of the experiment, in order to exclude non-present interfaces.
@@ -178,6 +198,69 @@ Each measurement test corresponds to one entry into a json-formatted list, and c
     "tend": 1489077102.204858
 }
 ```
+
+#### Video Streaming (VLC-based)
+```
+{
+    "_id": "2f68dbfa-623c-11e7-b921-0242ac110002",
+    "app": "vlc",
+    "conf": {
+        "VideoStreamingURL": "https://youtu.be/WtPkFBbJLMg",
+        "network_caching": "--file-caching=0",
+        "timeout": 3600
+    },
+    "host": "192.168.0.173",
+    "iface": "op0",
+    "nodeid": "175",
+    "results": {
+        "Nstalls": 0,
+        "init_delay": 1.7260780334472656,
+        "input_bitrates": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            2241.8315410614014,
+            1223.2468128204346,
+            820.0439810752869,
+            1544.584035873413,
+            917.9500341415405,
+            1166.8622493743896,
+            1166.8622493743896,
+            1025.6614685058594,
+            1301.876187324524,
+            1040.130376815796,
+            1001.866340637207,
+            1003.5899877548218,
+            1003.5899877548218,
+            1369.5205450057983,
+            958.9923024177551,
+            971.7546105384827,
+            1365.7389879226685,
+            1331.9141864776611,
+            876.8774271011353,
+            876.8774271011353,
+            999.0349411964417,
+            1053.0998706817627,
+            1053.0998706817627,
+            1638.7465000152588,
+            1149.4606733322144,
+            223.04105758666992,
+            223.04105758666992,
+            194.7897970676422
+        ],
+        "video_sizes": [
+            "(1280L, 720L)",
+            "(0L, 0L)"
+        ]
+    },
+    "timestamp_begin": 1499339596.994916,
+    "timestamp_end": 1499339629.102839
+}
+```
+
+
+
 In folder [benchmarking/files/sample-output](benchmarking/files/sample-output) we provide sample experimental output files.
 
 

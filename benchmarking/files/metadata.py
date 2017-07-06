@@ -18,13 +18,14 @@ import logging     # needed for logging useful info
 
 
 class retrieve_metadata_thread(threading.Thread):
-    def __init__(self, zmqport, metadata_topic, topic_filters, metadataResultsFilename, experimentConfig, logger, name='MetadataThread'):
+    def __init__(self, zmqport, metadata_topic, topic_filters, temp_metadataResultsFilename, metadataResultsFilename, experimentConfig, logger, name='MetadataThread'):
         self._stopevent = threading.Event()
         threading.Thread.__init__(self, name=name)
         # set parameters
         self.zmqport = zmqport
         self.metadata_topic = metadata_topic
         self.topic_filters = topic_filters
+        self.temp_metadataResultsFilename = temp_metadataResultsFilename
         self.metadataResultsFilename = metadataResultsFilename
         self.experimentConfig = experimentConfig
         self.logger = logger
@@ -42,8 +43,9 @@ class retrieve_metadata_thread(threading.Thread):
         # list to store captured messages
         msgList = []
         # dump json formatted results here
-        with open(os.path.join(os.path.expanduser('~'),'tempMetaData.txt'), mode='w') as metadataFile:
-        # read until stop event is sent by main program
+        with open(os.path.join('/monroe/results',self.temp_metadataResultsFilename), mode='w') as metadataFile:
+            metadataFile.write("[")
+            # read until stop event is sent by main program
             while not self._stopevent.isSet():
                 # read message
                 try:
@@ -64,9 +66,16 @@ class retrieve_metadata_thread(threading.Thread):
                     msgList.insert(len(msgList),msg)
                     #print("Metadata List contains {} msgs").format(len(msgList))
                     json.dump(msgList[-1], metadataFile, sort_keys=True, indent=4, separators=(',', ': '))
+                    metadataFile.write(",\n")
                 #else:
                     # print ('Irrelevant Topic: ' + topic)
                     # do nothing and move on
+            # before closing file
+            metadataFile.seek(-2, os.SEEK_END)
+            metadataFile.truncate()
+            metadataFile.write("]")
+
         # finalization actions
-        shutil.copy2(os.path.join(os.path.expanduser('~'),'tempMetaData.txt'), os.path.join('/monroe/results',self.metadataResultsFilename))
-        logger.info('Gracefully exit metadata retrieval thread at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
+        now_str = time.strftime("%Y%m%d-%H%M%S_", time.gmtime(time.time()))
+        shutil.copy2(os.path.join('/monroe/results',self.temp_metadataResultsFilename), os.path.join('/monroe/results',now_str+self.metadataResultsFilename))
+        self.logger.info('Gracefully exit metadata retrieval thread at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
