@@ -22,54 +22,9 @@ import zmq         # needed for retrieving metadata from daemon
 import threading   # needed for running metadata retrieval as thread within the main program
 
 #-------------------------------------------------------------------------------
-# configuration
+# load configuration
 #-------------------------------------------------------------------------------
-# Look at specific interfaces: the list will be cross-checked with the actual interfaces detected in the system.
-acceptable_ifaces       = ['eth0','op0']      # comma-separated list
-# ping configuration
-Nrounds                 = 2 # number of rounds repeating test measurement
-pingServer              = 'google.com' # IP or URL to hit
-pingCount               = 5            # number of ping hits
-# iperf configuration
-iperfServerIPaddr       = '147.102.25.88'         # IP or URL where iperf3 server resides #iperf.volia.net
-iperfServerfPort        = 6666                      # port where iperf3 server listens #5201
-iperfTimeToRun          = 5                         # time duration of iperf3 test
-# speedtest configuration
-speedtestServer     = 'http://speedtest.otenet.gr' #IP or URL where Speedtest Server is Hosted
-# curl configuration
-curlTimeout             = 5                                                                 # duration of file transfer
-# curl HTTP-GET specific
-curlRemoteFile          = 'http://releases.ubuntu.com/14.04/ubuntu-14.04.5-desktop-amd64.iso' # remote file location for HTTP GET
-# curl HTTP-POST specific
-curlLocalFile           = "/monroe/results/jellyfish_200MB.mkv"                             # local file location for HTTP POST
-curlServerResponseURL   = "http://**.**.**.**/cgi-bin/save_file.py"                         # server-side file upload app
-curlUsername            = "******"                                                          # authentication username for file upload
-curlPassword            = "******"                                                          # authentication passworkd for file upload
-# video-specific
-# video probing specific
-vp_args             = ["--sub-source=marq",                                                 # vlc player parameters
-                       "--vout=none",
-                       "--file-caching=0",
-                       "--disc-caching=0",
-                       "--sout-mux-caching=1500"
-                       ]
-vp_youtube_url      = 'https://youtu.be/WtPkFBbJLMg'                                        # video url
-vp_timeout          = 3600                                                                  # video test duration
-
-# metadata related
-metadataActivateFlag    = True
-zmqport                 = "tcp://172.17.0.1:5556"                               # where to listen
-metadata_topic          = "" # empty string stands for all messages             # subscribe to all messages
-topic_filters           = ["MONROE.META.DEVICE.MODEM","MONROE.META.DEVICE.GPS"] # filter out unwanted
-# filenames to store results
-dataResultsFilename     = 'dataResultsFile.json'                                # file to store data results
-metadataResultsFilename = 'metadataResultsFile.json'                            # file to store metadata results
-temp_dataResultsFilename     = 'temp_dataResultsFile.json'                      # file to store (temp) data results
-temp_metadataResultsFilename = 'temp_metadataResultsFile.json'                  # file to store (temp) metadata results
-# configuration related to storing results to database
-# logging
-temp_logfilename    = 'temp_experimentLogFile.txt'
-logfilename         = 'experimentLogFile.txt'
+import config as cfg
 
 #-------------------------------------------------------------------------------
 # load local modules
@@ -94,7 +49,7 @@ formatter = logging.Formatter("%(message)s") #formatter = logging.Formatter("[%(
 consoleHandler.setFormatter(formatter)
 logger.addHandler(consoleHandler)
 # add file handler in addition to console handler
-fileHandler = logging.FileHandler(os.path.join('/monroe/results', temp_logfilename))
+fileHandler = logging.FileHandler(os.path.join('/monroe/results', cfg.temp_logfilename))
 logger.addHandler(fileHandler)
 
 
@@ -141,7 +96,7 @@ logging.info(("Current date/time is                         : {}").format(time.s
 
 # network setup identification
 detected_ifaces = netifaces.interfaces()
-active_ifaces = sorted(list(set(acceptable_ifaces) & set(detected_ifaces)))
+active_ifaces = sorted(list(set(cfg.acceptable_ifaces) & set(detected_ifaces)))
 logging.info(("Active Ifaces: {}").format(active_ifaces))
 
 if active_ifaces:
@@ -152,15 +107,15 @@ if active_ifaces:
     gws_INET = gws[netifaces.AF_INET]
     logging.info(('NetIfaces GWs: {}').format(gws_INET))
 
-    if metadataActivateFlag:
+    if cfg.metadataActivateFlag:
         # metadata thread instantiation & start retrieving in the background
-        mdThread = retrieve_metadata_thread(zmqport, metadata_topic, topic_filters, temp_metadataResultsFilename, metadataResultsFilename, experimentConfig, logger)
+        mdThread = retrieve_metadata_thread(cfg.zmqport, cfg.metadata_topic, cfg.topic_filters, cfg.temp_metadataResultsFilename, cfg.metadataResultsFilename, experimentConfig, logger)
         #mdThread = retrieve_metadata_thread()
         mdThread.setDaemon(True)
         mdThread.start()
 
     # begin core actions
-    with open(os.path.join('/monroe/results',temp_dataResultsFilename), mode='w') as dataResultsFile: # dump json formatted results here
+    with open(os.path.join('/monroe/results',cfg.temp_dataResultsFilename), mode='w') as dataResultsFile: # dump json formatted results here
         # initialize the list to store experimental results
         expResultsList = []
         dataResultsFile.write("[")
@@ -169,9 +124,9 @@ if active_ifaces:
         for i in active_ifaces:
             networkUsage[i] = {'tx': {'before': -1, 'after': -1}, 'rx': {'before': -1, 'after': -1} }
 
-        for roundix in range(1,Nrounds+1):
+        for roundix in range(1,cfg.Nrounds+1):
             # start round
-            logging.info(('///// Round {}/{} /////').format(roundix,Nrounds))
+            logging.info(('///// Round {}/{} /////').format(roundix,cfg.Nrounds))
             # start per iface testing
             for iface in active_ifaces:
                 logging.info(('In Interface {}').format(iface))
@@ -213,19 +168,19 @@ if active_ifaces:
                     resultRecords_old = len(expResultsList)
 
                     # PING Experiment
-                    expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, pingServer, ipaddr, pingCount, logger))
+                    expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, cfg.pingServer, ipaddr, cfg.pingCount, logger))
                     # iperf-upload
-                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, iperfServerIPaddr, iperfServerfPort, iperfTimeToRun, 'send', ipaddr, logger))
+                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'send', ipaddr, logger))
                     # iperf-download
-                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, iperfServerIPaddr, iperfServerfPort, iperfTimeToRun, 'receive', ipaddr, logger))
+                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'receive', ipaddr, logger))
                     # speedtest full test (upload, download, ping)
-                    #expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, speedtestServer, ipaddr, logger))
+                    expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, cfg.speedtestServer, ipaddr, logger))
                     # curl http download (GET)
-                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, curlRemoteFile, ipaddr, curlTimeout, 'download', logger))
+                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlRemoteFile, ipaddr, cfg.curlTimeout, 'download', logger))
                     # curl http upload (POST)
-                    expResultsList.insert(len(expResultsList),curl_test(iface, experimentConfig, curlLocalFile,  ipaddr, curlTimeout, 'upload', logger,curlServerResponseURL, curlUsername, curlPassword))
+                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlLocalFile,  ipaddr, cfg.curlTimeout, 'upload', logger, cfg.curlServerResponseURL, cfg.curlUsername, cfg.curlPassword))
                     # video streaming experiment
-                    expResultsList.insert(len(expResultsList),video_streaming_probe_test( iface, experimentConfig, ipaddr, vp_args, vp_youtube_url, vp_timeout, VideoStreamingProbe,  logger))
+                    expResultsList.insert(len(expResultsList),video_streaming_probe_test( iface, experimentConfig, ipaddr, cfg.vp_args, cfg.vp_youtube_url, cfg.vp_timeout, VideoStreamingProbe,  logger))
 
                     # get network usage after the experiments and print to output
                     networkUsage[iface]['tx']['after'] =  str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2))
@@ -250,17 +205,15 @@ if active_ifaces:
 #-------------------------------------------------------------------------------
 # finalization actions
 #-------------------------------------------------------------------------------
-#now_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S_")
 now_str = time.strftime("%Y%m%d-%H%M%S_", time.gmtime(time.time()))
 # move result files to target dir
 if active_ifaces: # at least one interface found
-    #shutil.copy2(os.path.join('/monroe/results',temp_dataResultsFilename), os.path.join('/monroe/results',dataResultsFilename))
-    shutil.copy2(os.path.join('/monroe/results',temp_dataResultsFilename), os.path.join('/monroe/results',now_str+dataResultsFilename))
+    shutil.copy2(os.path.join('/monroe/results',cfg.temp_dataResultsFilename), os.path.join('/monroe/results',now_str+cfg.dataResultsFilename))
 
     # terminate metadata thread & allow for some time to end thread
-    if metadataActivateFlag:
+    if cfg.metadataActivateFlag:
         mdThread.terminate()
         time.sleep(3)
 
-shutil.copy2(os.path.join('/monroe/results',temp_logfilename), os.path.join('/monroe/results',now_str+logfilename))
+shutil.copy2(os.path.join('/monroe/results',cfg.temp_logfilename), os.path.join('/monroe/results',now_str+cfg.logfilename))
 logging.info('\nExit main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))

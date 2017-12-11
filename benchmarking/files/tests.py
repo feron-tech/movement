@@ -9,8 +9,9 @@ import subprocess  # needed for calling external shell commands
 import re          # needed for string search procedures
 import uuid        # needed for generating a unique id for JSON recording
 import json        # needed for processing/storing formated results
-import sys         # needed for sys functionalities calling
+import sys,os      # needed for sys and os functionalities calling
 from datetime import datetime
+import urllib2
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
 def ping_test(iface, experimentConfig, serverIPaddr, sourceIPaddr, numberOfPings, logger):
@@ -90,6 +91,72 @@ def iperf3_test(iface, experimentConfig, serverIPaddr, serverPort, timeToRun, mo
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
+def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, logger, curlServerResponseURL="", curlUsername="", curlPassword=""):
+    # support curl GET FILE and POST FILE tests:
+    # Normal Operation: A large file is transfered for a period determined by timeout. When timeout expires the stats are stored.
+    # Abnormal Operation Scenario 1: If the remote file is not available the test terminates after timeout expires and stas (speed, transfer bytes) take zero values.
+    # Abnormal Operation Scenario 2: If the remote file transfer completes before the timeout expires (e.g. due to small file size and/or very high speed connection) then results are not recorded.
+    result = {}
+    timeoutExpired = False
+    deadLinkFound = False # boolean variable to check if file exists
+    if mode == 'download':
+        logger.info(('\n\tRunning CURL HTTP DOWNLOAD FILE for Iface {}').format(iface))
+        command_line = "curl -s -O " + filename + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_download}\nresultSize=%{size_download}"
+        try:
+            urllib2.urlopen(urllib2.Request(filename))
+            deadLinkFound = False
+        except:
+            deadLinkFound = True
+    elif mode == 'upload':
+        logger.info(('\n\tRunning CURL HTTP UPLOAD FILE for Iface {}').format(iface))
+        command_line = "curl -u " + curlUsername + ":" + curlPassword + " -s -X POST -F filename=@" + filename + " " + curlServerResponseURL + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_upload}\nresultSize=%{size_upload}"
+        deadLinkFound = not (os.path.exists(filename))
+    if not deadLinkFound:
+        try:
+            timestamp_begin = time.time()
+            logger.info(("\t\tExperiment Started at (from current system time)  : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(timestamp_begin))))
+            output = subprocess.check_output( command_line.split(" "), shell=False )
+        except subprocess.CalledProcessError as e: # this is raised when timeout expires
+            timeoutExpired = True
+            output = e.output
+            timestamp_end = time.time()
+            logger.info(("\t\tExperiment Ended   at (from current system time)  : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(timestamp_end))))
+            #print e.returncode
+            # process output
+            results = output.split('\n')
+            speed = results[0]
+            [(m.start(0), m.end(0)) for m in re.finditer("resultSpeed=", speed)]
+            speed_Mbps = float(speed[m.end(0):].split(',')[0])*8/(1000**2)
+            size = results[1]
+            [(m.start(0), m.end(0)) for m in re.finditer("resultSize=", size)]
+            size_Mbytes = float(size[m.end(0):].split(',')[0])/(1000**2)
+            # print results
+            logger.info(('\t\tResults for {} seconds File Transfer over HTTP: (File: {})').format(timeout, filename))
+            logger.info(("\t\t\tTransfer Speed (Mbps)   = {:.2f}").format(speed_Mbps))
+            #logger.info(("\t\t\tTransfer Size  (Mbytes) = {:.2f}").format(size_Mbytes))
+            # return values
+            result = {'_id': str(uuid.uuid1()), 'nodeid': experimentConfig['nodeid'], 'iface': iface, 'app': 'curl', 'host': sourceIPaddr, 'filename': filename,
+            'conf': {'mode': mode, 'timeout':timeout, 'ServerResponseURL': curlServerResponseURL}, 'timestamp_begin': timestamp_begin, 'timestamp_end': timestamp_end,
+            'results': {'speed_Mbps':speed_Mbps, 'size_Mbytes':size_Mbytes}}
+            return result
+
+        # the following are executed for abnormal operation: file not found or timeout didnot expire
+        logger.info("\t\t[Timeout didnot expire. Results are not considered.]")
+        logger.info(("\t\tExperiment Ended at (from current system time) {}:").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time()))))
+        result = {'_id': str(uuid.uuid1()), 'nodeid': experimentConfig['nodeid'], 'iface': iface, 'app': 'curl', 'host': sourceIPaddr, 'filename': filename,
+        'conf': {'mode': mode, 'timeout':timeout, 'ServerResponseURL': curlServerResponseURL}, 'status': 'Timeout didnot expire.'}
+        return result
+
+    else:
+        # the following are executed for abnormal operation: file not found or timeout didnot expire
+        logger.info("\t\t[File not found. Results are not considered.]")
+        logger.info(("\t\tExperiment Ended at (from current system time) {}:").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time()))))
+        result = {'_id': str(uuid.uuid1()), 'nodeid': experimentConfig['nodeid'], 'iface': iface, 'app': 'curl', 'host': sourceIPaddr, 'filename': filename,
+        'conf': {'mode': mode, 'timeout':timeout, 'ServerResponseURL': curlServerResponseURL}, 'status': 'File not found.'}
+        return result
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
 def speedtest_test(iface, experimentConfig, serverURL, sourceIPaddr, logger):
     # supports command-line speedtest using speedtest-cli
     command_line = "/opt/monroe/speedtest-cli --mini " + serverURL + " --source " + sourceIPaddr + " --json"
@@ -120,60 +187,6 @@ def speedtest_test(iface, experimentConfig, serverURL, sourceIPaddr, logger):
         logger.info(("\tUnable to perform speedtest experiment. Error code:{}.  Error message: {}").format(exc.returncode, str(exc)))
         return {'_id': str(uuid.uuid1()), 'nodeid': experimentConfig['nodeid'], 'iface': iface, 'app': 'speedtest', 'host': sourceIPaddr, 'server': serverURL,
         'exception_error':str(exc)}
-#--------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-#--------------------------------------------------------------------------------------------------------------------------------------------------------------
-def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, logger, curlServerResponseURL="", curlUsername="", curlPassword=""):
-    # support curl GET FILE and POST FILE tests:
-    # Normal Operation: A large file is transfered for a period determined by timeout. When timeout expires the stats are stored.
-    # Abnormal Operation Scenario 1: If the remote file is not available the test terminates after timeout expires and stas (speed, transfer bytes) take zero values.
-    # Abnormal Operation Scenario 1: If the remote file transfer completes before the timeout expires (e.g. due to small file size and/or very high speed connection) then results are not recorded.
-    result = {}
-    timeoutExpired = False
-
-    if mode == 'download':
-        command_line = "curl -s -O " + filename + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_download}\nresultSize=%{size_download}"
-        logger.info(('\n\tRunning CURL HTTP DOWNLOAD FILE for Iface {}').format(iface))
-    elif mode == 'upload':
-        logger.info(('\n\tRunning CURL HTTP UPLOAD FILE for Iface {}').format(iface))
-        command_line = "curl -u " + curlUsername + ":" + curlPassword + " -s -X POST -F filename=@" + filename + " " + curlServerResponseURL + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_upload}\nresultSize=%{size_upload}"
-    try:
-        timestamp_begin = time.time()
-        logger.info(("\t\tExperiment Started at (from current system time)  : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(timestamp_begin))))
-        output = subprocess.check_output( command_line.split(" "), shell=False )
-    except subprocess.CalledProcessError as e: # this is raised when timeout expires
-        timeoutExpired = True
-        output = e.output
-        timestamp_end = time.time()
-        logger.info(("\t\tExperiment Ended   at (from current system time)  : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(timestamp_end))))
-        #print e.returncode
-
-        # process output
-        results = output.split('\n')
-        speed = results[0]
-        [(m.start(0), m.end(0)) for m in re.finditer("resultSpeed=", speed)]
-        speed_Mbps = float(speed[m.end(0):].split(',')[0])*8/(1000**2)
-        size = results[1]
-        [(m.start(0), m.end(0)) for m in re.finditer("resultSize=", size)]
-        size_Mbytes = float(size[m.end(0):].split(',')[0])/(1000**2)
-
-        # print results
-        logger.info(('\t\tResults for {} seconds File Transfer over HTTP: (File: {})').format(timeout, filename))
-        logger.info(("\t\t\tTransfer Speed (Mbps)   = {:.2f}").format(speed_Mbps))
-        #logger.info(("\t\t\tTransfer Size  (Mbytes) = {:.2f}").format(size_Mbytes))
-
-        # return values
-        result = {'_id': str(uuid.uuid1()), 'nodeid': experimentConfig['nodeid'], 'iface': iface, 'app': 'curl', 'host': sourceIPaddr, 'filename': filename,
-        'conf': {'mode': mode, 'timeout':timeout, 'ServerResponseURL': curlServerResponseURL}, 'timestamp_begin': timestamp_begin, 'timestamp_end': timestamp_end,
-        'results': {'speed_Mbps':speed_Mbps, 'size_Mbytes':size_Mbytes}}
-        return result
-
-    # the following are executed for abnormal operation: file not found or timeout didnot expire
-    logger.info("\t\t[Timeout didnot expire. Results are not considered.]")
-    logger.info(("\t\tExperiment Ended at (from current system time) {}:").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time()))))
-    result = {'_id': str(uuid.uuid1()), 'nodeid': experimentConfig['nodeid'], 'iface': iface, 'app': 'curl', 'host': sourceIPaddr, 'filename': filename,
-    'conf': {'mode': mode, 'timeout':timeout, 'ServerResponseURL': curlServerResponseURL}, 'status': 'Timeout did not expire '}
-    return result
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
