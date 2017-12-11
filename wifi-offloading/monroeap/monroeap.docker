@@ -1,0 +1,30 @@
+FROM monroe/base
+
+MAINTAINER antonis.gotsis@feron-tech.com
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+build-essential \
+pkg-config \
+libnl-3-dev libnl-genl-3-dev libssl-dev \
+dnsmasq \
+&& apt-get clean
+
+COPY conf/ /home/
+
+# hostapd
+RUN wget https://w1.fi/releases/hostapd-2.6.tar.gz
+RUN tar xvzf hostapd-2.6.tar.gz
+WORKDIR /hostapd-2.6/hostapd/
+
+RUN cp /home/hostapd_build_config.bk .config
+RUN cp /home/hostapd.conf ./hostapd.conf
+RUN make clean && make
+
+# dnsmasq
+RUN cp /home/dnsmasq.conf /etc/dnsmasq.conf
+
+ENTRYPOINT \
+service dnsmasq restart && \
+/home/routing.sh && \
+./hostapd ./hostapd.conf && \
+/bin/bash
