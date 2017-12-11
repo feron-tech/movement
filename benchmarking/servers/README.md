@@ -8,7 +8,7 @@ Although each server could be loaded and configured to operate in a standalone m
 The MOVEMENT server-side container includes:
 * An ```iperf3``` server, and in particular 4 instances running in ports 5201-5204, enabling iperf3 TCP/UDP testing.
 * A local ```Speedtest``` server, enabling speedtest execution in a private server, based on instructions found [here](http://www.tecmint.com/speedtest-mini-server-to-test-bandwidth-speed/).
-* An HTTP Apache Web-Server hosting a large file (35 MB size) for performing HTTP file download tests (using the ```curl``` package).
+* An HTTP Apache Web-Server hosting a large file (50 MB size) for performing HTTP file download tests (using the ```curl``` package).
 * A web application written in CGI/Python and hosted in the same Apache Web-Sever, where CGI has been configured appropriately, enabling HTTP file upload tests (using the ```curl``` package).
 
 #### Preparing the Image
@@ -40,7 +40,7 @@ RUN mv /var/www/html/mini/index-php.html  /var/www/html/mini/index.html
 
 Next, the file used for HTTP download tests is copied to the same public folder:
 ```
-COPY conf/jellyfish_35MB.mkv /var/www/html/
+COPY conf/jellyfish_50MB.mkv /var/www/html/
 ```
 
 For HTTP upload we need first to enable CGI scripts in Apache, then copy the server-side script that performs the dummy actions for file uploading, and finally create security credentials for allowing file uploading to specific users (in this example a user called ```testmonroeuser``` with the same password as the login name is created)

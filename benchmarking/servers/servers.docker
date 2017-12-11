@@ -19,7 +19,7 @@ RUN mv mini/ /var/www/html/
 RUN mv /var/www/html/mini/index-php.html  /var/www/html/mini/index.html
 
 # http download file
-COPY conf/jellyfish_100MB.mkv /var/www/html/
+COPY conf/jellyfish_50MB.mkv /var/www/html/
 
 # http upload file
 RUN cd /etc/apache2/mods-enabled
