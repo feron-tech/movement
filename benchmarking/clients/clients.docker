@@ -1,0 +1,13 @@
+FROM monroe/base
+
+MAINTAINER antonis.gotsis@feron-tech.com  # Antonis Gotsis (Feron Technologies P.C.)
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+netcat \
+iputils-ping \
+vlc-nox \
+&& apt-get clean
+
+COPY files/ /opt/monroe/
+
+ENTRYPOINT ["dumb-init", "--", "/bin/bash", "/opt/monroe/script.sh"]
