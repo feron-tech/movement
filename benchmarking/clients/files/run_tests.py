@@ -111,7 +111,7 @@ if active_ifaces:
         # metadata thread instantiation & start retrieving in the background
         mdThread = retrieve_metadata_thread(cfg.zmqport, cfg.metadata_topic, cfg.topic_filters, cfg.temp_metadataResultsFilename, cfg.metadataResultsFilename, experimentConfig, logger)
         #mdThread = retrieve_metadata_thread()
-        mdThread.setDaemon(True)
+        mdThread.setDaemon(False)
         mdThread.start()
 
     # begin core actions
@@ -194,7 +194,6 @@ if active_ifaces:
                     for m in expResultsList[resultRecords_old:len(expResultsList)]:
                         json.dump(m, dataResultsFile, sort_keys=True, indent=4, separators=(',', ': '))
                         dataResultsFile.write(",\n")
-
                 except Exception as e:
                     print("Error in current Interface testing")
         # before closing file
@@ -212,8 +211,9 @@ if active_ifaces: # at least one interface found
 
     # terminate metadata thread & allow for some time to end thread
     if cfg.metadataActivateFlag:
+        logging.info('\nSent termination command to metadata thread  ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
         mdThread.terminate()
-        time.sleep(3)
+        #time.sleep(5)
 
 shutil.copy2(os.path.join('/monroe/results',cfg.temp_logfilename), os.path.join('/monroe/results',now_str+cfg.logfilename))
-logging.info('\nExit main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
+logging.info('\nEnded main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
