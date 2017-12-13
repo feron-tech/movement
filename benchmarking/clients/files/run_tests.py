@@ -22,6 +22,67 @@ import zmq         # needed for retrieving metadata from daemon
 import threading   # needed for running metadata retrieval as thread within the main program
 
 #-------------------------------------------------------------------------------
+# function measuring networking usage
+#-------------------------------------------------------------------------------
+def getNetworkUsage(interface):
+    results = []
+    command_line_rx = 'cat /sys/class/net/'+interface+'/statistics/tx_bytes'
+    command_line_tx = 'cat /sys/class/net/'+interface+'/statistics/rx_bytes'
+    results.append(str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2)))
+    results.append(str(float(subprocess.check_output(command_line_rx.split(" "),shell=False))/(1000**2)))
+    return results
+
+#-------------------------------------------------------------------------------
+# add appropriate routing roule for current iface
+#-------------------------------------------------------------------------------
+def setRouting(ip_address, ip_rules_preconf, prio, action='ADD'):
+
+    # flush cache to empty the cache
+    command_line = "ip route flush cache"
+    output = subprocess.check_output(command_line.split(" "),shell=False)
+
+    # get lookup table index for current iface
+    lookup_table_ind = []
+    #iface_lookups = []
+    for i in ip_rules_preconf:
+        if re.split(':',(re.split('\t',i))[0])[0]=="10000":
+            #iface_lookups.append(re.split('\t',i)[1])
+            current_ip_rule = re.split(' ',re.split('\t',i)[1])
+            if ip_address in current_ip_rule:
+                lookup_table_ind = current_ip_rule[3]
+                #logger.info("For current IP (" + ip_address + "), the lookup table index is: " + lookup_table_ind)
+                break
+
+    # add temp rule for routing global traffic
+    if lookup_table_ind:
+        if action == 'ADD':
+            command_line = "ip rule add from all iif lo lookup " + str(lookup_table_ind) + " pref " + str(prio)
+        elif action == 'DEL':
+            command_line = "ip rule del from all iif lo lookup " + str(lookup_table_ind) + " pref " + str(prio)
+        try:
+            output = subprocess.check_output(command_line.split(" "),shell=False)
+        except Exception as e:
+            logger.info(("ip rule add exception: {}").format(str(e)))
+
+    # flush cache to empty the cache
+    command_line = "ip route flush cache"
+    output = subprocess.check_output(command_line.split(" "),shell=False)
+
+    # print current ip tables rules
+    command_line = "ip ru"
+    try:
+        output = subprocess.check_output(command_line.split(" "),shell=False)
+        #logger.info(" ****************** ip ru command output current ******************")
+        #logger.info(("{}").format(str(output)))
+    except Exception as e:
+        logger.info(("exception error in ip ru command {}").format(str(e)))
+
+    #command_line = "ip -s route get 147.102.25.88"
+    #output = subprocess.check_output(command_line.split(" "),shell=False)
+    #logger.info(("IP ROUTE GET: {}").format(str(output)))
+
+
+#-------------------------------------------------------------------------------
 # load configuration
 #-------------------------------------------------------------------------------
 import config_local as cfg
@@ -124,6 +185,18 @@ if active_ifaces:
         for i in active_ifaces:
             networkUsage[i] = {'tx': {'before': -1, 'after': -1}, 'rx': {'before': -1, 'after': -1} }
 
+        # get preconfigured ip rules
+        ip_rules_all = []
+        command_line = "ip ru"
+        try:
+            output = subprocess.check_output(command_line.split(" "),shell=False)
+            logger.info("ip ru command output:")
+            logger.info(("{}").format(str(output)))
+            ip_rules_all = re.split('\n',output)
+        except Exception as e:
+            logger.info(("exception error in ip ru command {}").format(str(e)))
+
+        # start measurement rounds
         for roundix in range(1,cfg.Nrounds+1):
             # start round
             logging.info(('///// Round {}/{} /////').format(roundix,cfg.Nrounds))
@@ -132,62 +205,51 @@ if active_ifaces:
                 logging.info(('In Interface {}').format(iface))
                 try:
                     ipaddr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
-                    # find gateway for current iface
-                    for gws_INET_record in gws_INET:
-                        if iface in gws_INET_record:
-                            gw = gws_INET_record[0]
-                            logging.info(('(IP: {}, Gateway: {})').format(ipaddr,gw))
-                            break
 
-                    # actions for setting default gateway
-                    # 1) delete (if any) default gateways
-                    command_line = "ip route del 0/0"
-                    try:
-                        output = subprocess.check_output(command_line.split(" "),shell=False)
-                    except Exception as e:
-                        logger.info(("exception error in ip route del 0/0 {}").format(str(e)))
-                    # 2) add default gateway rule
-                    command_line = "route add default gw " + gw + " " + iface
-                    try:
-                        output = subprocess.check_output(command_line.split(" "),shell=False)
-                    except Exception as e:
-                        logger.info(("exception error in setting up default gateway {}").format(str(e)))
-                    # (optional) print route table
-                    command_line = "route -n"
-                    output = subprocess.check_output(command_line.split(" "),shell=False)
-                    logger.info(("Routing Table :  {}").format(str(output)))
+                    # apply ip route
+                    setRouting(ipaddr, ip_rules_all, 15000, 'ADD')
 
                     # get network usage before the experiments (in MB)
-                    command_line_rx = 'cat /sys/class/net/'+iface+'/statistics/tx_bytes'
-                    command_line_tx = 'cat /sys/class/net/'+iface+'/statistics/rx_bytes'
-                    networkUsage[iface]['tx']['before'] =  str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2))
-                    networkUsage[iface]['rx']['before'] =  str(float(subprocess.check_output(command_line_rx.split(" "),shell=False))/(1000**2))
+                    for xiface in active_ifaces:
+                        networkUsage[xiface]['tx']['before'] = getNetworkUsage(xiface)[0]
+                        networkUsage[xiface]['rx']['before'] = getNetworkUsage(xiface)[1]
 
                     # Experiments
                     # get current results index
                     resultRecords_old = len(expResultsList)
 
                     # PING Experiment
-                    expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, cfg.pingServer, ipaddr, cfg.pingCount, logger))
+                    expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, cfg.pingServer, ipaddr, cfg.pingCount, logger, bindToIface=True))
+                    #expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, cfg.pingServer, ipaddr, cfg.pingCount, logger, bindToIface=False))
                     # iperf-upload
-                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'send', ipaddr, logger))
+                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'send', ipaddr, logger, bindToIface=True))
+                    #expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'send', ipaddr, logger, bindToIface=False))
                     # iperf-download
-                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'receive', ipaddr, logger))
+                    expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'receive', ipaddr, logger, bindToIface=True))
+                    #expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'receive', ipaddr, logger, bindToIface=False))
                     # speedtest full test (upload, download, ping)
-                    expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, cfg.speedtestServer, ipaddr, logger))
+                    expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, cfg.speedtestServer, ipaddr, logger, bindToIface=True))
+                    #expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, cfg.speedtestServer, ipaddr, logger, bindToIface=False))
                     # curl http download (GET)
-                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlRemoteFile, ipaddr, cfg.curlTimeout, 'download', logger))
+                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlRemoteFile, ipaddr, cfg.curlTimeout, 'download', logger, bindToIface=True))
+                    #expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlRemoteFile, ipaddr, cfg.curlTimeout, 'download', logger, bindToIface=False))
                     # curl http upload (POST)
-                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlLocalFile,  ipaddr, cfg.curlTimeout, 'upload', logger, cfg.curlServerResponseURL, cfg.curlUsername, cfg.curlPassword))
+                    expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlLocalFile,  ipaddr, cfg.curlTimeout, 'upload', logger, cfg.curlServerResponseURL, cfg.curlUsername, cfg.curlPassword, bindToIface=True))
+                    #expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlLocalFile,  ipaddr, cfg.curlTimeout, 'upload', logger, cfg.curlServerResponseURL, cfg.curlUsername, cfg.curlPassword, bindToIface=False))
                     # video streaming experiment
                     expResultsList.insert(len(expResultsList),video_streaming_probe_test( iface, experimentConfig, ipaddr, cfg.vp_args, cfg.vp_youtube_url, cfg.vp_timeout, VideoStreamingProbe,  logger))
 
-                    # get network usage after the experiments and print to output
-                    networkUsage[iface]['tx']['after'] =  str(float(subprocess.check_output(command_line_tx.split(" "),shell=False))/(1000**2))
-                    networkUsage[iface]['rx']['after'] =  str(float(subprocess.check_output(command_line_rx.split(" "),shell=False))/(1000**2))
-                    logging.info(('\n\tTraffic data consumed for current experiment round: Receive {:.2f} MB / Send {:.2f} MB').format(
-                        float(networkUsage[iface]['tx']['after'])-float(networkUsage[iface]['tx']['before']),
-                        float(networkUsage[iface]['rx']['after'])-float(networkUsage[iface]['rx']['before'])))
+                    # get network usage after the experiments and print to output the consumed MBs
+                    logging.info('\n')
+                    for xiface in active_ifaces:
+                        networkUsage[xiface]['tx']['after'] = getNetworkUsage(xiface)[0]
+                        networkUsage[xiface]['rx']['after'] = getNetworkUsage(xiface)[1]
+                        logging.info(('\tIface: {} - Traffic data consumed for current experiment round: Receive {:.2f} MB / Send {:.2f} MB').format(xiface,
+                            float(networkUsage[xiface]['tx']['after'])-float(networkUsage[xiface]['tx']['before']),
+                            float(networkUsage[xiface]['rx']['after'])-float(networkUsage[xiface]['rx']['before'])))
+
+                    # delete ip route
+                    setRouting(ipaddr, ip_rules_all, 15000, 'DEL')
 
                     #logging.info(('aaaa'))
                     # Write last round results to file
@@ -195,7 +257,9 @@ if active_ifaces:
                         json.dump(m, dataResultsFile, sort_keys=True, indent=4, separators=(',', ': '))
                         dataResultsFile.write(",\n")
                 except Exception as e:
+                    print e
                     print("Error in current Interface testing")
+
         # before closing file
         dataResultsFile.seek(-2, os.SEEK_END)
         dataResultsFile.truncate()
@@ -215,5 +279,7 @@ if active_ifaces: # at least one interface found
         mdThread.terminate()
         #time.sleep(5)
 
-shutil.copy2(os.path.join('/monroe/results',cfg.temp_logfilename), os.path.join('/monroe/results',now_str+cfg.logfilename))
+command_line = "ip route flush cache"
+output = subprocess.check_output(command_line.split(" "),shell=False)
 logging.info('\nEnded main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
+shutil.copy2(os.path.join('/monroe/results',cfg.temp_logfilename), os.path.join('/monroe/results',now_str+cfg.logfilename))

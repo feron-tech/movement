@@ -14,9 +14,12 @@ from datetime import datetime
 import urllib2
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
-def ping_test(iface, experimentConfig, serverIPaddr, sourceIPaddr, numberOfPings, logger):
+def ping_test(iface, experimentConfig, serverIPaddr, sourceIPaddr, numberOfPings, logger,  bindToIface=True):
     # supports typical ping test
-    command_line = "ping -c " + str(numberOfPings) + " -I " + sourceIPaddr + " " + serverIPaddr
+    if bindToIface:
+        command_line = "ping -c " + str(numberOfPings) + " -I " + sourceIPaddr + " " + serverIPaddr
+    else:
+        command_line = "ping -c " + str(numberOfPings) + " " + serverIPaddr
     logger.info('\n\tRunning PING for Iface {}'.format(iface))
     try:
         timestamp_begin = time.time()
@@ -52,17 +55,18 @@ def ping_test(iface, experimentConfig, serverIPaddr, sourceIPaddr, numberOfPings
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
-def iperf3_test(iface, experimentConfig, serverIPaddr, serverPort, timeToRun, mode, sourceIPaddr, logger):
+def iperf3_test(iface, experimentConfig, serverIPaddr, serverPort, timeToRun, mode, sourceIPaddr, logger,  bindToIface=True):
     # supports iperf3 TCP SEND/RECEIVE tests
-
-    command_line = "iperf3 -c " + serverIPaddr + " -p " + str(serverPort) + " -B " + sourceIPaddr + " -t " + str(timeToRun) + " -J"
+    if bindToIface:
+        command_line = "iperf3 -c " + serverIPaddr + " -p " + str(serverPort) + " -B " + sourceIPaddr + " -t " + str(timeToRun) + " -J"
+    else:
+        command_line = "iperf3 -c " + serverIPaddr + " -p " + str(serverPort) + " -t " + str(timeToRun) + " -J"
     # if mode is receive add -R flag
     if mode == 'send':
         logger.info(('\n\tRunning iperf3 UPLOAD for Iface {}').format(iface))
     elif mode == 'receive':
         command_line = command_line + ' -R'
         logger.info(('\n\tRunning iperf3 DOWNLOAD for Iface {}').format(iface))
-
     try:
         timestamp_begin = time.time()
         logger.info(("\t\tExperiment Started at (from current system time)  : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(timestamp_begin))))
@@ -91,7 +95,7 @@ def iperf3_test(iface, experimentConfig, serverIPaddr, serverPort, timeToRun, mo
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
-def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, logger, curlServerResponseURL="", curlUsername="", curlPassword=""):
+def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, logger, curlServerResponseURL="", curlUsername="", curlPassword="", bindToIface=True):
     # support curl GET FILE and POST FILE tests:
     # Normal Operation: A large file is transfered for a period determined by timeout. When timeout expires the stats are stored.
     # Abnormal Operation Scenario 1: If the remote file is not available the test terminates after timeout expires and stas (speed, transfer bytes) take zero values.
@@ -101,7 +105,10 @@ def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, lo
     deadLinkFound = False # boolean variable to check if file exists
     if mode == 'download':
         logger.info(('\n\tRunning CURL HTTP DOWNLOAD FILE for Iface {}').format(iface))
-        command_line = "curl -s -O " + filename + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_download}\nresultSize=%{size_download}"
+        if bindToIface:
+            command_line = "curl -s -O " + filename + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_download}\nresultSize=%{size_download}"
+        else:
+            command_line = "curl -s -O " + filename + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_download}\nresultSize=%{size_download}"
         try:
             urllib2.urlopen(urllib2.Request(filename))
             deadLinkFound = False
@@ -109,7 +116,10 @@ def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, lo
             deadLinkFound = True
     elif mode == 'upload':
         logger.info(('\n\tRunning CURL HTTP UPLOAD FILE for Iface {}').format(iface))
-        command_line = "curl -u " + curlUsername + ":" + curlPassword + " -s -X POST -F filename=@" + filename + " " + curlServerResponseURL + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_upload}\nresultSize=%{size_upload}"
+        if bindToIface:
+            command_line = "curl -u " + curlUsername + ":" + curlPassword + " -s -X POST -F filename=@" + filename + " " + curlServerResponseURL + " --interface " + sourceIPaddr + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_upload}\nresultSize=%{size_upload}"
+        else:
+            command_line = "curl -u " + curlUsername + ":" + curlPassword + " -s -X POST -F filename=@" + filename + " " + curlServerResponseURL + " -m" + str(timeout) + " -w" + " resultSpeed=%{speed_upload}\nresultSize=%{size_upload}"
         deadLinkFound = not (os.path.exists(filename))
     if not deadLinkFound:
         try:
@@ -157,9 +167,12 @@ def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, lo
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------
-def speedtest_test(iface, experimentConfig, serverURL, sourceIPaddr, logger):
+def speedtest_test(iface, experimentConfig, serverURL, sourceIPaddr, logger, bindToIface=True):
     # supports command-line speedtest using speedtest-cli
-    command_line = "/opt/monroe/speedtest-cli --mini " + serverURL + " --source " + sourceIPaddr + " --json"
+    if bindToIface:
+        command_line = "/opt/monroe/speedtest-cli --mini " + serverURL + " --source " + sourceIPaddr + " --json"
+    else:
+        command_line = "/opt/monroe/speedtest-cli --mini " + serverURL + " --json"
     logger.info(('\n\tRunning SPEEDTEST for Iface {}').format(iface))
     try:
         # execute experiment
