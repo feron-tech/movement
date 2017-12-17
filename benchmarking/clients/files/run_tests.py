@@ -72,8 +72,8 @@ def setRouting(ip_address, ip_rules_preconf, prio, action='ADD'):
     command_line = "ip ru"
     try:
         output = subprocess.check_output(command_line.split(" "),shell=False)
-        #logger.info(" ****************** ip ru command output current ******************")
-        #logger.info(("{}").format(str(output)))
+        logger.info(" ****************** ip ru command output current ******************")
+        logger.info(("{}").format(str(output)))
     except Exception as e:
         logger.info(("exception error in ip ru command {}").format(str(e)))
 
@@ -122,7 +122,8 @@ logger.addHandler(fileHandler)
 experimentConfig = {
 "nodeid": "-1",
 "start" : 0,
-"stop"  : 0
+"stop"  : 0,
+"experimentid": 0
 }
 
 # determine if i am running locally or within docker: if in docker store results in /monroe/results else at home dir.
@@ -146,6 +147,9 @@ try: # read configuration from node: this is feasible when we run the experiment
 except Exception as e: # no configuration file, go on with dummy initialization done above
     logging.info('[Handled Exception] There is no configuration file: we run in local mode.')
     # do nothing
+
+#create a unique id for the current experiment
+experimentConfig["experimentid"] = str(uuid.uuid4())[:8]  # smaller thatn 'str(uuid.uuid1())'
 
 # setting experiment
 logging.info(("Starting measurement procedure  for nodeid = {}").format(experimentConfig['nodeid']))
@@ -271,7 +275,7 @@ if active_ifaces:
 now_str = time.strftime("%Y%m%d-%H%M%S_", time.gmtime(time.time()))
 # move result files to target dir
 if active_ifaces: # at least one interface found
-    shutil.copy2(os.path.join('/monroe/results',cfg.temp_dataResultsFilename), os.path.join('/monroe/results',now_str+cfg.dataResultsFilename))
+    shutil.copy2(os.path.join('/monroe/results',cfg.temp_dataResultsFilename), os.path.join('/monroe/results',cfg.dataResultsFilename+"_"+experimentConfig["experimentid"]+".json"))
 
     # terminate metadata thread & allow for some time to end thread
     if cfg.metadataActivateFlag:
@@ -282,4 +286,4 @@ if active_ifaces: # at least one interface found
 command_line = "ip route flush cache"
 output = subprocess.check_output(command_line.split(" "),shell=False)
 logging.info('\nEnded main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
-shutil.copy2(os.path.join('/monroe/results',cfg.temp_logfilename), os.path.join('/monroe/results',now_str+cfg.logfilename))
+shutil.copy2(os.path.join('/monroe/results',cfg.temp_logfilename), os.path.join('/monroe/results',cfg.logfilename+"_"+experimentConfig["experimentid"]+".txt"))

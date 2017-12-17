@@ -77,5 +77,5 @@ class retrieve_metadata_thread(threading.Thread):
 
         # finalization actions
         now_str = time.strftime("%Y%m%d-%H%M%S_", time.gmtime(time.time()))
-        shutil.copy2(os.path.join('/monroe/results',self.temp_metadataResultsFilename), os.path.join('/monroe/results',now_str+self.metadataResultsFilename))
+        shutil.copy2(os.path.join('/monroe/results',self.temp_metadataResultsFilename), os.path.join('/monroe/results',self.metadataResultsFilename+"_"+self.experimentConfig["experimentid"]+".json"))
         self.logger.info('Gracefully exit metadata retrieval thread at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))

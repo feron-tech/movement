@@ -68,7 +68,7 @@ class VideoStreamingProbe(object):
 
     def __parse_final_results(self):
         playback_timeline, buffering_timeline = self.__get_final_results()
-        self.__print_final_results(playback_timeline, buffering_timeline)
+        #self.__print_final_results(playback_timeline, buffering_timeline)
 
     def __get_final_results(self):
         global video_buffering_events, start_sys_time
