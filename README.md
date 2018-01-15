@@ -16,5 +16,11 @@ The repository contains a set of sub-projects/experiments for measuring the qual
   - Test WiFi quality
   - 4G Offloading through Wi-Fi (upcoming)
 
+### Repository Structure
+* benchmarking : software extensions for data/video/voice testing
+  * clients : the client applications (loaded in MONROE nodes)
+  * servers: the server-side applications needed to perform the client tests (dockerized for easy deployment)
+* wifi-offloading/monroeap : software extensions related to wifi testing (setting MONROE node as AP and 4G/WiFi routing)
+
 
 <img src="movement.png" width="50%" height="50%"/>
