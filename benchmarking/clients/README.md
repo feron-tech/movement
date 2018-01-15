@@ -80,7 +80,7 @@ In order to execute iperf3 tests, an iperf3 server needs to be deployed. A list 
   * ```curlServerResponseURL``` : the server-side app managing the file uploading. There are plenty of approaches for developing such server-side functionality. In our implementation we use a cgi/python-based script, loaded into an Apache2 HTTP server, for which CGI scripting have to be enabled first.
   * ```curlUsername```          : HTTP POST authentication username. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
   * ```curlPassword```          : HTTP POST authentication password. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
-Detailed instructions on how to configure the server side can be found at the end of the documentation. A 50 MB file which can be used for uploading is also provided in the repository ([files/testfiles/jellyfish_50MB.mkv](files/testfiles/jellyfish_50MB.mkv)).
+Detailed instructions on how to configure the server side can be found at the end of the documentation. A 50 MB file which can be used for uploading is also provided in the repository ([testfiles/jellyfish_50MB.mkv](testfiles/jellyfish_50MB.mkv)).
 
 ###### Video Streaming Test
 * ```vp_youtube_url``` : the URL of the video file to play. This could be link to a public Youtube video or to a private video server. For Youtube videos, it seems that the ```1280x720``` resolution is selected by default. For enforcing another resolution, including ```1920x1080```, explicit links from https://www.h3xed.com/blogmedia/youtube-info.php could be used.
@@ -253,4 +253,4 @@ Each measurement test corresponds to one entry into a json-formatted list, and c
 }
 ```
 
-In folder [clients/files/sample-output](clients/files/sample-output) we provide sample experimental output files.
+In folder [files/sample-output](files/sample-output) we provide sample experimental output files.
