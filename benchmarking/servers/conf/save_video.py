@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 import cgi, os
-import cgitb; cgitb.enable()
+import cgitb 
+
+cgitb.enable()
 
 form = cgi.FieldStorage()
 
@@ -23,4 +25,4 @@ else:
 
 print ("Content-type:text/html")
 print()
-print(message
+print(message)

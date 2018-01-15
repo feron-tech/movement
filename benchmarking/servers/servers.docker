@@ -26,7 +26,7 @@ RUN cd /etc/apache2/mods-enabled
 RUN ln -s ../mods-available/cgi.load
 RUN htpasswd -bc /usr/local/apache2_passwords testuser testuser
 COPY conf/serve-cgi-bin.conf /etc/apache2/conf-enabled/
-COPY conf/save_file.py /usr/lib/cgi-bin/
+COPY conf/save_video.py /usr/lib/cgi-bin/
 
 #iperf3
 COPY conf/multi_iperf3_server.sh /home/
