@@ -79,16 +79,18 @@ Notice that we are using non-default ports for HTTP and iperf3 to avoid conflict
 
 * Download the official Mongo instance: ```docker pull mongo:latest```
 * Create a local directory for storing the data files of mongo, for example: ```mkdir ~/mongodb_data```
-* Run the container:  ```docker run --rm -d --name mongocn -p 54024:27017 -v ~/mongodb_data:/data/db mongo```, where we have mapped the default mongo port (27017) to 54024 (Then at the configuration file you have to set ```dbPort``` to 54024)
+* Run the container:  ```docker run --rm -d --name mongocn -p 54024:27017 -v ~/mongodb_data:/data/db mongo```, where we have mapped the default mongo port (```27017```) to ```54024``` (Then at the configuration file you have to set ```dbPort``` to ```54024```)
 * When you login for the first time only: ```docker exec -it mongocn mongo admin```.
-  * Create database : ```use movementTestDataBase```
-  * Create user:
+  * Create database : ```use movementTestDataBase``` (in the configuration file set appropriately ```dbname```)
+  * Create user (in the configuration file set appropriately ```dbuser```, ```dbpassword```):
   ```
   db.createUser(
-  {
-	user: "admin",
-	pwd: "admin",
-	roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
-  }
+	  {
+		user: "myuser",
+		pwd: "mypassword",
+		roles: [
+		   { role: "readWrite", db: "movementTestDB" }
+		]
+	  }
   )
   ```
