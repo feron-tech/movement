@@ -24,10 +24,10 @@ curlPassword                 = "********"                                       
 # video-specific
 # video probing specific
 vp_args                      = ["--sub-source=marq",                                    # vlc player parameters
-                                "--vout=none",
-                                "--file-caching=0",
-                                "--disc-caching=0",
-                                "--sout-mux-caching=1500"]
+								"--vout=none",
+								"--file-caching=0",
+								"--disc-caching=0",
+								"--sout-mux-caching=1500"]
 vp_youtube_url               = 'https://youtu.be/WtPkFBbJLMg'                           # video url
 vp_timeout                   = 3600                                                     # video test duration
 # metadata related
@@ -43,3 +43,11 @@ temp_metadataResultsFilename = 'temp_metadataResultsFile.json'                  
 # logging
 temp_logfilename             = 'temp_experimentLogFile.txt'
 logfilename                  = 'experimentLogFile.txt'
+# configuration related to storing results to database
+storeToDb                    = True
+dbname                       = '**************'
+dbuser                       = '**************'
+dbpassword                   = '**************'
+dbhost                       = '**************'
+dbport                       = '**************'
+dbCollectionName             = '**************'
