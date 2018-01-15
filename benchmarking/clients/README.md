@@ -26,10 +26,10 @@ The experiment is organized in the following steps:
 * (Optional) Store measurement results in a Mongo database
 
 The core functionality is organized into 4 files:
-* [clients/files/config.py](clients/files/config.py), which includes the experiment configuration.
-* [clients/files/run_tests.py](clients/files/run_tests.py), which includes the execution of the selected testing applications and is also responsible for spawning the metadata thread. The results are formated as json entries and are dumped to a file and optionally to a database. This is the main script called in the container initialization.
-* [clients/files/tests.py](clients/files/tests.py), which includes one function per application; each function is responsible for forming and executing the external command, capture the outcome of the command and dump results to a list.
-* [clients/files/metadata.py](clients/files/metadata.py), which includes a single class responsible for implementing the subscription to the ZMQ MONROE application, capturing the metadata messages, apply the neccessary filters and dump messages in a json list.
+* [files/config.py](files/config.py), which includes the experiment configuration.
+* [files/run_tests.py](files/run_tests.py), which includes the execution of the selected testing applications and is also responsible for spawning the metadata thread. The results are formated as json entries and are dumped to a file and optionally to a database. This is the main script called in the container initialization.
+* [files/tests.py](files/tests.py), which includes one function per application; each function is responsible for forming and executing the external command, capture the outcome of the command and dump results to a list.
+* [files/metadata.py](files/metadata.py), which includes a single class responsible for implementing the subscription to the ZMQ MONROE application, capturing the metadata messages, apply the neccessary filters and dump messages in a json list.
 
 The repository contains also:
 * the neccessary dockerization files (docker template, main program execution script, build and push scripts)
@@ -77,10 +77,10 @@ In order to execute iperf3 tests, an iperf3 server needs to be deployed. A list 
   * ```curlRemoteFile``` : the complete URL of the file to be downloaded. One could use either a publicly available URL or deploy a private HTTP Server (e.g. Apache2) and host a target file.
 * For HTTP POST (File Upload):
   * ```curlLocalFile``` : the full path of the local file to be uploaded.
-  * ```curlServerResponseURL``` : the server-side app managing the file uploading. There are plenty of approaches for developing such server-side functionality. In our implementation we use a cgi/python-based script, loaded into an Apache2 HTTP server, for which CGI scripting have to be enabled first. The script is also provided in the repository ([benchmarking/files/http-server/save_file.py](benchmarking/files/http-server/save_file.py)).
+  * ```curlServerResponseURL``` : the server-side app managing the file uploading. There are plenty of approaches for developing such server-side functionality. In our implementation we use a cgi/python-based script, loaded into an Apache2 HTTP server, for which CGI scripting have to be enabled first.
   * ```curlUsername```          : HTTP POST authentication username. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
   * ```curlPassword```          : HTTP POST authentication password. This is optionally added for security reasons. The server needs to be configured properly for managing authentication.
-Detailed instructions on how to configure the server side can be found at the end of the documentation. A 20 MB file which can be used for uploading is also provided in the repository ([benchmarking/files/jellyfish-5-mbps-hd-h264.mkv](benchmarking/files/jellyfish-5-mbps-hd-h264.mkv)).
+Detailed instructions on how to configure the server side can be found at the end of the documentation. A 50 MB file which can be used for uploading is also provided in the repository ([files/testfiles/jellyfish_50MB.mkv](files/testfiles/jellyfish_50MB.mkv)).
 
 ###### Video Streaming Test
 * ```vp_youtube_url``` : the URL of the video file to play. This could be link to a public Youtube video or to a private video server. For Youtube videos, it seems that the ```1280x720``` resolution is selected by default. For enforcing another resolution, including ```1920x1080```, explicit links from https://www.h3xed.com/blogmedia/youtube-info.php could be used.
