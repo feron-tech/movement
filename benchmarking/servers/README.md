@@ -4,6 +4,8 @@
 This sub-project contains detailed instructions for loading the necessary server-side components in order to run the various MOVEMENT benchmarking clients.
 Although each server could be loaded and configured to operate in a standalone mode in a typical Linux host, here we propose a method to prepare a single Docker image containing all the components installed and pre-configured. This significantly eases the server deployment, as it resorts to the execution of a single container.
 
+In addition we provide instructions on setting up a Mongo Database in a different container (and running either in the same or in other hosts from the server container) for storing the measurement results.
+
 #### Contents
 The MOVEMENT server-side container includes:
 * An ```iperf3``` server, and in particular 4 instances running in ports 5201-5204, enabling iperf3 TCP/UDP testing.
@@ -71,3 +73,22 @@ The container is created under a single command (assuming ```servers``` is the n
 docker run --rm -idt --name servercn --privileged -p 8081:80 -p 8201-8204:5201-5204 servers
 ```
 Notice that we are using non-default ports for HTTP and iperf3 to avoid conflict with possible host server instances running in the same machine. These ports should be configuted appropriately at the clients side.
+
+#### Instructions for setting up a containerized Mongo DB
+(The instructions are based on https://store.docker.com/images/mongo?tab=description)
+
+* Download the official Mongo instance: ```docker pull mongo:latest```
+* Create a local directory for storing the data files of mongo, for example: ```mkdir ~/mongodb_data```
+* Run the container:  ```docker run --rm -d --name mongocn -p 54024:27017 -v ~/mongodb_data:/data/db mongo```, where we have mapped the default mongo port (27017) to 54024 (Then at the configuration file you have to set ```dbPort``` to 54024)
+* When you login for the first time only: ```docker exec -it mongocn mongo admin```.
+  * Create database : ```use movementTestDataBase```
+  * Create user:
+  ```
+  db.createUser(
+  {
+	user: "admin",
+	pwd: "admin",
+	roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+  }
+  )
+  ```
