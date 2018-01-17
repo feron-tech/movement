@@ -101,6 +101,9 @@ import config_local as cfg
 from tests import ping_test, iperf3_test, speedtest_test, curl_test, video_streaming_probe_test
 # import metadata functionality
 from metadata import retrieve_metadata_thread
+# import packet sniffing functionality
+from sniffer import sniffer_thread
+
 # video streaming probe functionality
 from video.video_streaming_probe import VideoStreamingProbe
 
@@ -136,40 +139,40 @@ experimentConfig = {
 # determine if i am running locally or within docker: if in docker store results in /monroe/results else at home dir.
 inDocker = bool(re.search('docker', subprocess.check_output(['cat', '/proc/1/cgroup'],shell=False)))
 if inDocker:
-	logging.info("I am running within docker")
+	logger.info("I am running within docker")
 else:
-	logging.info("I am running in standalone mode (outside docker)")
+	logger.info("I am running in standalone mode (outside docker)")
 
 
 try: # read configuration from node: this is feasible when we run the experiment through the scheduler, and not locally.
 	with open('/monroe/results/nodeid') as nodeidfd:
 		experimentConfig['nodeid'] = nodeidfd.readline().rstrip()
 except Exception as e: # no configuration file, go on with dummy initialization done above
-	logging.info('[Handled Exception] There is no nodeid file: we run through scheduler.')
+	logger.info('[Handled Exception] There is no nodeid file: we run through scheduler.')
 	# do nothing
 
 try: # read configuration from node: this is feasible when we run the experiment through the scheduler, and not locally.
 	with open('/monroe/config') as configfd:
 		experimentConfig.update(json.load(configfd)) # experimentConfig fields are updated with real values
 except Exception as e: # no configuration file, go on with dummy initialization done above
-	logging.info('[Handled Exception] There is no configuration file: we run in local mode.')
+	logger.info('[Handled Exception] There is no configuration file: we run in local mode.')
 	# do nothing
 
 #create a unique id for the current experiment
 experimentConfig["experimentid"] = str(uuid.uuid4())[:8]  # smaller thatn 'str(uuid.uuid1())'
 
 # setting experiment
-logging.info(("Starting measurement procedure  for nodeid = {}").format(experimentConfig['nodeid']))
+logger.info(("Starting measurement procedure  for nodeid = {}").format(experimentConfig['nodeid']))
 # Starting and ending scheduled times are valid for experiments run through scheduler. For local experiments these are irrelevant.
-logging.info(("Testing Scheduled to start at                : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(experimentConfig['start']))))
-logging.info(("Testing Scheduled not to end later than      : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(experimentConfig['stop']))))
+logger.info(("Testing Scheduled to start at                : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(experimentConfig['start']))))
+logger.info(("Testing Scheduled not to end later than      : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(experimentConfig['stop']))))
 # Read time from local clock
-logging.info(("Current date/time is                         : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time()))))
+logger.info(("Current date/time is                         : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time()))))
 
 # network setup identification
 detected_ifaces = netifaces.interfaces()
 active_ifaces = sorted(list(set(cfg.acceptable_ifaces) & set(detected_ifaces)))
-logging.info(("Active Ifaces: {}").format(active_ifaces))
+logger.info(("Active Ifaces: {}").format(active_ifaces))
 
 if active_ifaces:
 	print('At least 1 active interface found')
@@ -177,7 +180,7 @@ if active_ifaces:
 	# get all INET ifaces Gateways
 	gws = netifaces.gateways()
 	gws_INET = gws[netifaces.AF_INET]
-	logging.info(('NetIfaces GWs: {}').format(gws_INET))
+	logger.info(('NetIfaces GWs: {}').format(gws_INET))
 
 	# thread activation
 	if cfg.metadataActivateFlag:
@@ -215,8 +218,8 @@ if active_ifaces:
 		command_line = "ip ru"
 		try:
 			output = subprocess.check_output(command_line.split(" "),shell=False)
-			logger.info("ip ru command output:")
-			logger.info(("{}").format(str(output)))
+			#logger.info("ip ru command output:")
+			#logger.info(("{}").format(str(output)))
 			ip_rules_all = re.split('\n',output)
 		except Exception as e:
 			logger.info(("exception error in ip ru command {}").format(str(e)))
@@ -224,15 +227,15 @@ if active_ifaces:
 		# start measurement rounds
 		for roundix in range(1,cfg.Nrounds+1):
 			# start round
-			logging.info(('///// Round {}/{} /////').format(roundix,cfg.Nrounds))
+			logger.info(('///// Round {}/{} /////').format(roundix,cfg.Nrounds))
 			# start per iface testing
 			for iface in active_ifaces:
-				logging.info(('In Interface {}').format(iface))
+				logger.info(('In Interface {}').format(iface))
 				try:
 					ipaddr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
 
 					# apply ip route
-					setRouting(ipaddr, ip_rules_all, 15000, 'ADD')
+					#setRouting(ipaddr, ip_rules_all, 15000, 'ADD')
 
 					# get network usage before the experiments (in MB)
 					for xiface in active_ifaces:
@@ -242,6 +245,13 @@ if active_ifaces:
 					# Experiments
 					# get current results index
 					resultRecords_old = len(expResultsList)
+
+					# Packet Sniffing
+					if cfg.sniffingActivateFlag:
+						# metadata thread instantiation & start retrieving in the background
+						sniffThread = sniffer_thread(iface, logger)
+						sniffThread.setDaemon(False)
+						sniffThread.start()
 
 					# PING Experiment
 					expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, cfg.pingServer, ipaddr, cfg.pingCount, logger, bindToIface=True))
@@ -264,17 +274,21 @@ if active_ifaces:
 					# video streaming experiment
 					expResultsList.insert(len(expResultsList),video_streaming_probe_test( iface, experimentConfig, ipaddr, cfg.vp_args, cfg.vp_youtube_url, cfg.vp_timeout, VideoStreamingProbe,  logger))
 
+					if cfg.sniffingActivateFlag:
+						logger.info('\tSent termination command to sniffer thread  ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
+						sniffThread.terminate()
+
 					# get network usage after the experiments and print to output the consumed MBs
-					logging.info('\n')
+					logger.info('\n')
 					for xiface in active_ifaces:
 						networkUsage[xiface]['tx']['after'] = getNetworkUsage(xiface)[0]
 						networkUsage[xiface]['rx']['after'] = getNetworkUsage(xiface)[1]
-						logging.info(('\tIface: {} - Traffic data consumed for current experiment round: Receive {:.2f} MB / Send {:.2f} MB').format(xiface,
+						logger.info(('\tIface: {} - Traffic data consumed for current experiment round: Receive {:.2f} MB / Send {:.2f} MB').format(xiface,
 							float(networkUsage[xiface]['tx']['after'])-float(networkUsage[xiface]['tx']['before']),
 							float(networkUsage[xiface]['rx']['after'])-float(networkUsage[xiface]['rx']['before'])))
 
 					# delete ip route
-					setRouting(ipaddr, ip_rules_all, 15000, 'DEL')
+					#setRouting(ipaddr, ip_rules_all, 15000, 'DEL')
 
 					# Write last round results to file
 					for m in expResultsList[resultRecords_old:len(expResultsList)]:
@@ -308,11 +322,11 @@ if active_ifaces: # at least one interface found
 
 	# terminate metadata thread & allow for some time to end thread
 	if cfg.metadataActivateFlag:
-		logging.info('\nSent termination command to metadata thread  ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
+		logger.info('\nSent termination command to metadata thread  ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
 		mdThread.terminate()
 		#time.sleep(5)
 
-command_line = "ip route flush cache"
-output = subprocess.check_output(command_line.split(" "),shell=False)
-logging.info('\nEnded main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
+#command_line = "ip route flush cache"
+#output = subprocess.check_output(command_line.split(" "),shell=False)
+logger.info('\nEnded main program normally at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
 shutil.copy2(os.path.join('/monroe/results',cfg.temp_logfilename), os.path.join('/monroe/results',cfg.logfilename+"_"+experimentConfig["experimentid"]+".txt"))

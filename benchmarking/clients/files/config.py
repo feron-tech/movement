@@ -31,10 +31,12 @@ vp_args                      = ["--sub-source=marq",                            
 vp_youtube_url               = 'https://youtu.be/WtPkFBbJLMg'                           # video url
 vp_timeout                   = 3600                                                     # video test duration
 # metadata related
-metadataActivateFlag         = False
+metadataActivateFlag         = True
 zmqport                      = "tcp://172.17.0.1:5556"                                  # where to listen
 metadata_topic               = ""                                                       # empty string stands for all messages
 topic_filters                = ["MONROE.META.DEVICE.MODEM","MONROE.META.DEVICE.GPS"]    # filter out unwanted
+# packet sniffing related
+sniffingActivateFlag         = True
 # filenames to store results
 dataResultsFilename          = 'dataResultsFile.json'                                   # file to store data results
 metadataResultsFilename      = 'metadataResultsFile.json'                               # file to store metadata results
