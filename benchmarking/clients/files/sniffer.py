@@ -22,9 +22,11 @@ class sniffer_thread(threading.Thread):
 	def run(self):
 		self.logger.info('Started packet sniffing thread for device ' + self.iface + ', at ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time())))
 		cap = pcapy.open_live(self.iface , 65536 , 1 , 0)
+		#dumper = cap.dump_open('/monroe/results/temp.pcap')
 		while not self._stopevent.isSet():
 			(header, packet) = cap.next()
-			self.logger.info('\t[SNIFFER] Captured %d bytes' %(header.getlen()))
+			#self.logger.info('\t[SNIFFER] Captured %d bytes' %(header.getlen()))
+			#dumper.dump(header, packet)
 			#parse_packet(dev, packet, snifferlogger)
 
 		# finalization actions after stop event
