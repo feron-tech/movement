@@ -1,8 +1,5 @@
 #!/usr/bin/python
 
-# Authors: Antonis Gotsis, Marios Poulakis, Demetrios Vassiliadis (Feron Technologies P.C.)
-# License: GNU AFFERO GENERAL PUBLIC LICENSE Version 3
-# Developed for use by the EU H2020 MONROE OC2 MOVEMENT project
 # Summary: A high-level python script for configuring & running multiple network test experiments. Tested with python2
 
 
@@ -57,7 +54,6 @@ def metadata_exp():
 		msgList = []
 		# read until stop event is sent by main program
 		while stop==0:
-			#print(running_proc[0][1])
 			try:
 				evts = poller.poll(10000)
 				(topic, msgdata) = socket.recv(zmq.NOBLOCK).split(' ', 1)
@@ -79,21 +75,15 @@ def metadata_exp():
 				#print("Metadata List contains {} msgs").format(len(msgList))
 				json.dump(msgList[-1], metadataFile, sort_keys=True, indent=4, separators=(',', ': '))
 				metadataFile.write(",\n")
-			#else:
-				# print ('Irrelevant Topic: ' + topic)
-				# do nothing and move on
-	#except (KeyboardInterrupt, SystemExit):
-	#except:
-	#	print "bbbbbb"
 
+
+# handle kill signals
 def signal_handler(signal, frame):
 	global stop
 	stop=1
-	#print('You pressed Ctrl+C!')
 	print('stop metadata') # two ctrl+c signals are needed
-	#time.sleep(2)
-	shutil.copy2(temp_metadataResultsFilename, metadataResultsFilename + '_' + sys.argv[2] + '.json')
-	with open(metadataResultsFilename + '_' + sys.argv[2] + '.json', mode='a') as metadataFile:
+	shutil.copy2(temp_metadataResultsFilename, metadataResultsFilename + '_' + str(sys.argv[2]) + '_' + str(sys.argv[3]) + '.json')
+	with open(metadataResultsFilename + '_' + str(sys.argv[2]) + '_' + str(sys.argv[3]) + '.json', mode='a') as metadataFile:
 		if metadataFile.tell() > 2:
 			metadataFile.seek(-2, os.SEEK_END)
 			metadataFile.truncate()
@@ -102,7 +92,6 @@ def signal_handler(signal, frame):
 
 
 if __name__=='__main__':
-	#signal.signal(signal.SIGINT, signal_handler)
 	signal.signal(signal.SIGTERM, signal_handler)
 	metadata_exp()
 	signal.pause()

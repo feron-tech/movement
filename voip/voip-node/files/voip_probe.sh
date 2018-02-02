@@ -1,7 +1,6 @@
 #!/bin/bash
-# ------ PARAMETERS -----#
 
-filepath=$(dirname "$(readlink -f "$0")")
+# Summary: Bash scripts for VoIP test (registration & call)
 
 NODE_ID=$1
 EXP_ID=$2
@@ -10,7 +9,7 @@ SERVER_PORT="11880"
 
 socket=/tmp/linphonec-$(id -u)
 
-# REGISTER
+# REGISTER client to VoIP server
 call_extension=$(curl -s -X POST --header 'Content-Type: application/json' -d '{ "experimentId":"'"${EXP_ID}"'", "nodeId":"'"${NODE_ID}"'" }' http://${SERVER_IP}:${SERVER_PORT}/voip-registration-api/1.0.0/experiments)
 call_extension=$(echo ${call_extension} | sed 's/"//g')
 echo "call_extension:" ${call_extension}
@@ -39,15 +38,10 @@ do
 						echo -n "record ${call_extension}-linphone.wav" | nc -q 5 -U $socket
 						sleep 1
 						echo -n "call ${number}" | nc -q 5 -U $socket
-						#for command in "soundcard use files" "record $filename" "call $number"
-						#do
-						#    echo -n $command | nc -q 5 -U $socket
-						#done
 						;;
 				*Call\ *\ with\ *\ connected. )
 						sleep 1
 						echo ">>> sending pass"
-						#echo -n "play $passfile" | nc -q 5 -U $socket
 						;;
 				*Call\ terminated. )
 						sleep 1
@@ -84,7 +78,3 @@ do
 		esac
 done;
 )
-#echo $?;
-#if [ $? == 1 ]; then
-#	exit 1
-#fi;

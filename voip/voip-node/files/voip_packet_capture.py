@@ -1,8 +1,6 @@
-"""
-VoIP Packet Capture
-Feron Technologies P.C.
-Packet Capturing Tool for VoIP traffic
-"""
+#!/usr/bin/python
+
+# Summary: Packet Capturing Tool for VoIP traffic
 
 import datetime
 import dpkt
@@ -99,7 +97,7 @@ class VoipPacketCapture(object):
 
 	def __parse_udp_packet(self, packet, ip_header_length, s_addr, d_addr, packet_ep_time):
 		"""
-		Method to parse UDP packet
+		Method to parse UDP packet and compute packet loss and jitter
 		"""
 		u = ip_header_length + self.ETH_HEADER_SIZE
 		udph_length = 8
@@ -119,15 +117,11 @@ class VoipPacketCapture(object):
 				  ' Checksum : ' + str(checksum)
 			h_size = self.ETH_HEADER_SIZE + ip_header_length + udph_length
 			data_size = len(packet) - h_size
-
 			data = packet[h_size:]
-			#print data.encode('hex')
-			#print repr(data)
 			data_hex = str(data.encode('hex'))
 			data_hex_list = [data_hex[i:i+2] for i in range(0,len(data_hex), 2)]
 			rtp_seq_hex = data_hex_list[2:4]
 			rtp_sent_timestamp_hex = data_hex_list[4:8]
-			#print rtp_seq_hex, rtp_sent_timestamp_hex
 			rtp_seq = int("".join(str(y) for y in rtp_seq_hex),16)
 			rtp_sent_timestamp = int("".join(str(y) for y in rtp_sent_timestamp_hex),16)
 			print [rtp_seq, rtp_sent_timestamp, packet_ep_time]
@@ -182,19 +176,6 @@ class VoipPacketCapture(object):
 				print 'Mean jitter2: ' + '{0:.2f}'.format(np.mean(self.rtp_jitter2_list)*1000.0) + ' ms\n'
 
 
-			'''
-			if (len(self.rtp_time_list) > 1):
-				delta_time = packet_ep_time - self.rtp_time_list[-2]
-				print '{0:.2f}'.format(delta_time*1000.0)
-				self.rtp_delta_list.append(delta_time)
-				jitter = np.std(self.rtp_delta_list)
-				jitter2 = np.mean(np.abs([y - 0.002 for y in self.rtp_delta_list]))
-				print 'Jitter: ' + '{0:.2f}'.format(jitter*1000.0) + ' ms\n'
-				print 'Jitter2: ' + '{0:.2f}'.format(jitter2*1000.0) + ' ms\n'
-				print 'Mean delta: ' + '{0:.2f}'.format(np.mean(self.rtp_delta_list)*1000.0) + ' ms\n'
-			'''
-
-
 
 
 	def __parse_ip_packet(self, packet, packet_ep_time):
@@ -204,20 +185,15 @@ class VoipPacketCapture(object):
 		ip_header = packet[self.ETH_HEADER_SIZE:self.IP_HEADER_SIZE+self.ETH_HEADER_SIZE]
 
 		iph = unpack('!BBHHHBBH4s4s' , ip_header)
-
 		version_ihl = iph[0]
 		version = version_ihl >> 4
 		ihl = version_ihl & 0xF
-
 		iph_length = ihl * 4
-
 		ttl = iph[5]
 		protocol = iph[6]
 
 		s_addr = socket.inet_ntoa(iph[8])
 		d_addr = socket.inet_ntoa(iph[9])
-
-
 
 		'''
 		if s_addr == sys.argv[2]:
@@ -261,10 +237,16 @@ class VoipPacketCapture(object):
 
 
 	def latency_ms(self):
+		"""
+		Method compute latency (RTT/2)
+		"""
 		r = pyping.ping(sys.argv[2],count=10, timeout=5000)
 		return float(r.avg_rtt)/2
 
 	def mos(self):
+		"""
+		Method to compute MOS metric
+		"""
 		eff_latency = np.mean(self.latency_ms_list) + self.jitter_ms*2 + 10
 		if (eff_latency < 160):
 			R = 93.2 - eff_latency/40.0
@@ -280,6 +262,9 @@ class VoipPacketCapture(object):
 		return [R, MOS]
 
 	def main(self, dev):
+		"""
+		Main Method with output: Packet Loss (%), Latency (ms), Jitter (ms), R and e-MOS
+		"""
 		#list all devices
 		devices = pcapy.findalldevs()
 		print devices
@@ -288,10 +273,8 @@ class VoipPacketCapture(object):
 		print "Available devices are :"
 		for d in devices:
 			print d
-
 		#dev = raw_input("Enter device name to sniff : ")
 		#dev = "eth0"
-
 		print "Sniffing device " + dev
 
 		'''
@@ -304,9 +287,7 @@ class VoipPacketCapture(object):
 		'''
 		cap = pcapy.open_live(dev, 65536, 1, 0)
 		dumper = cap.dump_open('temp.pcap')
-		#print 'Before Latency:' + str(time.time())
 		self.latency_ms_list.append(self.latency_ms())
-		#print 'After Latency:' + str(time.time())
 
 		#start sniffing packets
 		while(True) :
@@ -333,7 +314,6 @@ class VoipPacketCapture(object):
 					return [self.packet_loss_perc, np.mean(self.latency_ms_list), self.jitter_ms, mos[0], mos[1]]
 
 			self.__parse_packet(packet, packet_ep_time)
-
 		#return
 
 
