@@ -1,6 +1,6 @@
-FROM ubuntu:latest
-LABEL maintainer="Feron Technologies <support@ferontech.com>"
-LABEL description="VoIP Probing Server"
+FROM ubuntu:16.04
+LABEL maintainer="Feron Technologies <info@feron-tech.com>"
+LABEL description="VoIP Probing Server for MONROE OC1 Movement Project"
 
 COPY files/installation_procedure.sh /root/installation_procedure.sh
 COPY files/voip_reg_requirements.txt /root/voip_reg_requirements.txt
@@ -10,6 +10,11 @@ COPY files/asterisk_conf/* /etc/asterisk/
 COPY files/mysql_conf/asteriskrealtime.sql /tmp/
 COPY files/asterisk_init/asterisk /etc/init.d/asterisk
 
+COPY Dockerfile /root/
+
 RUN /root/installation_procedure.sh
 
 ENTRYPOINT ["/root/startup.sh"]
+
+# BUILD : docker build -t ferontech/voip-server .
+# RUN   : docker run --rm  --name voip-server -it --privileged --net=host ferontech/voip-server bash
