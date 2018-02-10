@@ -26,6 +26,7 @@ The experiment is organized in the following steps:
 * Dump measurement results and retrieved metadata in json-formatted files.
 * (Optional) Store measurement results in a Mongo database
 
+For detailed information on the implementation navigate to the ```clients``` and ```servers``` directories.
 
 ### Quick Start Guide for Building and Running the Server and Client Containers
 
