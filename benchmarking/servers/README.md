@@ -1,4 +1,4 @@
-### The Server-Side Components of MOVEMENT Benchmarking Tests
+### Systematic Mobile Network Benchmarking using MONROE Nodes: The Server Side
 
 #### Introduction
 This sub-project contains detailed instructions for loading the necessary server-side components in order to run the various MOVEMENT benchmarking clients.

@@ -1,35 +1,13 @@
-### Systematic Mobile Network Benchmarking using MONROE Nodes
+### Systematic Mobile Network Benchmarking using MONROE Nodes: The Client Side
 
-#### Introduction & Code Structure
-The specific software extension enables the automated execution of a set of widely used mobile data network performance tools, in MONROE nodes. The applications allow to characterize latency and throughput. Currently the following standard applications are supported:
-* **ping**, for measuring RTT latency.
-* **iperf3** forward and reverse TCP tests, for measuring  throughput.
-* **speedtest**, for measuring latency, download and upload speed.
-* **HTTP transfer** file download (GET) and upload (POST) using the ```curl``` package, for measuring throughput in both directions.
-* **Video Streaming**, i.e. playing a video from a remote server (youtube or standalone server), for measuring various quality of service and experience indicators. The VLC client has been selected to be the core of our video testing tool, thanks to the availability of an extensive open API/library which exposes various video streaming parameters and performance indicators. Currently, the tool is able to automatically stream both YouTube videos (using a parser) and videos stored to dedicated servers. Various video quality levels (including 1080p) and network caching configurations are being supported. The tool enables the capture of a set of application-level quality of service/experience indicators, such as:
-  * video playback initiation latency,
-  * number of (potential) video stalls,
-  * progress of video playing time vs. the actual time,
-  * application bit-rate.
+#### Code Structure
 
-The extension is developed in Python (python 2 is currently fully tested and validated) and uses the _subprocess_ module to call the external command-line applications. Back-end public or private server applications are required for executing the experiments (e.g. iperf3 server, HTTP server, etc.).
-
-The experiment is organized in the following steps:
-* Selection & configuration of testing application parameters (e.g. servers to hit, duration of experiment, etc.).
-* Start capturing metadata (e.g. MODEM and GPS messages) in the background, using a dedicated thread.
-* Run the selected testing applications serially. For each application:
-  * Form and execute an external system command using the _subprocess_ python module;
-  * Capture the generated output (in string or json format) and filter out the corresponding KPI(s) information (e.g. latency, throughput, bytes transferred, etc.);
-  * Insert the results in a json-formatted list;
-  * (Optional) Log step-by-step experiment output for debugging purposes into a separate file.
-* Dump measurement results and retrieved metadata in json-formatted files.
-* (Optional) Store measurement results in a Mongo database
-
-The core functionality is organized into 4 files:
+The core functionality is organized into 5 files:
 * [files/config.py](files/config.py), which includes the experiment configuration.
 * [files/run_tests.py](files/run_tests.py), which includes the execution of the selected testing applications and is also responsible for spawning the metadata thread. The results are formated as json entries and are dumped to a file and optionally to a database. This is the main script called in the container initialization.
 * [files/tests.py](files/tests.py), which includes one function per application; each function is responsible for forming and executing the external command, capture the outcome of the command and dump results to a list.
 * [files/metadata.py](files/metadata.py), which includes a single class responsible for implementing the subscription to the ZMQ MONROE application, capturing the metadata messages, apply the neccessary filters and dump messages in a json list.
+* [files/sniffer.py](files/sniffer.py), which includes a single thread class responsible for implementing packet-level sniffing based on the pcapy library. The results are optionally dumped to a pcap file.
 
 The repository contains also:
 * the neccessary dockerization files (docker template, main program execution script, build and push scripts)
@@ -40,12 +18,13 @@ The repository contains also:
 #### Configuration
 
 #### Global Configuration
-The configuration includes 5 groups of parameters:
+The configuration includes 6 groups of parameters:
 * A group including a set of parameters that have to be configured per testing application.
 * A group of non application-specific parameters.
 * A group related to metadata retrieval settings.
 * A group related to storage of results and logging information into text filenames
 * A group related to storage of results to a Mongo database
+* A single-element group responsible activating packet-level sniffing.
 
 #### Network Configuration
 Special attention needs to be paid for multi-interface experiments. We provide two means to enforce traffic to be routed to a specific interface:
@@ -105,6 +84,10 @@ Detailed instructions on how to configure the server side can be found at the en
 * ```dbuser``` and ```dbpassword```: credentials to access to the DATABASE
 * ```dbhost``` and ```dbport```: where the Mongo instance resides
 * ```dbCollectionName``` : the collection name
+
+##### Packet Sniffing
+* ````sniffingActivateFlag``` : flag for activating/deactivating capture of packet-level statistics.
+
 
 #### Typical Experimental Output
 Each measurement test corresponds to one entry into a json-formatted list, and contains information about the configuration of the experiment (host, server, interface, nodeid, selected parameters), the starting and ending times, and the estimated KPIs. Sample measurement records are provided below:

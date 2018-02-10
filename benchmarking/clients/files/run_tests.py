@@ -79,8 +79,8 @@ def setRouting(ip_address, ip_rules_preconf, prio, action='ADD'):
 	command_line = "ip ru"
 	try:
 		output = subprocess.check_output(command_line.split(" "),shell=False)
-		logger.info(" ****************** ip ru command output current ******************")
-		logger.info(("{}").format(str(output)))
+		#logger.info(" ****************** ip ru command output current ******************")
+		#logger.info(("{}").format(str(output)))
 	except Exception as e:
 		logger.info(("exception error in ip ru command {}").format(str(e)))
 
@@ -92,7 +92,7 @@ def setRouting(ip_address, ip_rules_preconf, prio, action='ADD'):
 #-------------------------------------------------------------------------------
 # load configuration
 #-------------------------------------------------------------------------------
-import config_local as cfg
+import config as cfg
 
 #-------------------------------------------------------------------------------
 # load local modules
@@ -235,7 +235,7 @@ if active_ifaces:
 					ipaddr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
 
 					# apply ip route
-					#setRouting(ipaddr, ip_rules_all, 15000, 'ADD')
+					setRouting(ipaddr, ip_rules_all, 89999, 'ADD')
 
 					# get network usage before the experiments (in MB)
 					for xiface in active_ifaces:
@@ -255,22 +255,16 @@ if active_ifaces:
 
 					# PING Experiment
 					expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, cfg.pingServer, ipaddr, cfg.pingCount, logger, bindToIface=True))
-					#expResultsList.insert(len(expResultsList), ping_test(iface, experimentConfig, cfg.pingServer, ipaddr, cfg.pingCount, logger, bindToIface=False))
 					# iperf-upload
 					expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'send', ipaddr, logger, bindToIface=True))
-					#expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'send', ipaddr, logger, bindToIface=False))
 					# iperf-download
 					expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'receive', ipaddr, logger, bindToIface=True))
-					#expResultsList.insert(len(expResultsList), iperf3_test(iface, experimentConfig, cfg.iperfServerIPaddr, cfg.iperfServerfPort, cfg.iperfTimeToRun, 'receive', ipaddr, logger, bindToIface=False))
 					# speedtest full test (upload, download, ping)
 					expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, cfg.speedtestServer, ipaddr, logger, bindToIface=True))
-					#expResultsList.insert(len(expResultsList), speedtest_test(iface, experimentConfig, cfg.speedtestServer, ipaddr, logger, bindToIface=False))
 					# curl http download (GET)
 					expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlRemoteFile, ipaddr, cfg.curlTimeout, 'download', logger, bindToIface=True))
-					#expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlRemoteFile, ipaddr, cfg.curlTimeout, 'download', logger, bindToIface=False))
 					# curl http upload (POST)
 					expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlLocalFile,  ipaddr, cfg.curlTimeout, 'upload', logger, cfg.curlServerResponseURL, cfg.curlUsername, cfg.curlPassword, bindToIface=True))
-					#expResultsList.insert(len(expResultsList), curl_test(iface, experimentConfig, cfg.curlLocalFile,  ipaddr, cfg.curlTimeout, 'upload', logger, cfg.curlServerResponseURL, cfg.curlUsername, cfg.curlPassword, bindToIface=False))
 					# video streaming experiment
 					expResultsList.insert(len(expResultsList),video_streaming_probe_test( iface, experimentConfig, ipaddr, cfg.vp_args, cfg.vp_youtube_url, cfg.vp_timeout, VideoStreamingProbe,  logger))
 
@@ -288,7 +282,7 @@ if active_ifaces:
 							float(networkUsage[xiface]['rx']['after'])-float(networkUsage[xiface]['rx']['before'])))
 
 					# delete ip route
-					#setRouting(ipaddr, ip_rules_all, 15000, 'DEL')
+					setRouting(ipaddr, ip_rules_all, 89999, 'DEL')
 
 					# Write last round results to file
 					for m in expResultsList[resultRecords_old:len(expResultsList)]:
