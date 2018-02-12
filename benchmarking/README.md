@@ -34,23 +34,23 @@ For detailed information on the implementation navigate to the ```clients``` and
 ##### Build the image
 (Before building the image don't forget to pass the right configuration parameters into the ```config``` file.)
 
-Navigate to ```clients``` directory and run ```./build.sh ```
+Navigate to ```bench-node``` directory and run ```docker build -t ferontech/bench-node .```
 
 ##### Launch the container
 
 Either use the MONROE Scheduler or if you have direct access to the shell run the command:
 
-```docker run --rm -it --name clientcn -v /path/to/store/results:/monroe/results --privileged clients```
+```docker run --rm -it  --name bench-node-cn -v ~/path/to/store/results:/monroe/results --privileged ferontech/bench-node```
 
 #### Server
 ##### Build/Pull the images
 
-Navigate to ```server``` directory and run ```./build.sh ```
+Navigate to ```bench-server``` directory and run ```docker build -t ferontech/bench-server .```
 
 (Optional) For storing results to a MongoDB: ```docker pull mongo:latest```
 
 ##### Launch the containers
 
-``` docker run --rm -idt --name servercn --privileged -p 8081:80 -p 8201-8204:5201-5204 servers ```
+``` docker run --rm -idt --name bench-server-cn --privileged -p 8081:80 -p 8201-8204:5201-5204 ferontech/bench-server ```
 
-(Optional) For storing results to a MongoDB (detailed instructions in Server README file): ```docker run --rm -d --name mongocn -p 54024:27017 -v ~/mongodb_data:/data/db mongo```
+(Optional) For storing results to a MongoDB (detailed instructions in Server README file): ```docker run --rm -d --name mongocn -p 54024:27017 -v ~/mongodb_data:/data/db mongo```, where the mapped port (e.g. 54024) should be put in the node configuration file.

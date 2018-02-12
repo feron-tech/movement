@@ -4,23 +4,27 @@ This repository hosts the outcomes of project MOVEMENT, a project developing ope
 The repository contains a set of sub-projects/experiments for measuring the quality of live or experimental mobile data networks (3G/4G/4G+) including support for WiFi technologies. These experiments may be executed either at remote MONROE nodes or locally at any linux-based host equipped with mobile broadband devices (e.g. Wi-Fi/4G USB dongle, Mi-Fi, etc.).
 
 ### List of software extensions
-- Mobile network **benchmarking** based on:
-  - Popular/widely-used data tests:
-	- ping
+- Mobile network **benchmarking** based on widely-used data testing applications:
+	- Ping
 	- iperf3 (direct, reverse)
-	- speedtest (latency, download and upload speed)
+	- Speedtest by Ookla
 	- HTTP file transfer (upload/download)
-  - Video Streaming Quality for Youtube
-  - VoIP Quality (upcoming)
+	- Video streaming on demand using the open-source VLC player (Youtube or private video files)
+- **VoIP** testing and quality evaluation using open-source tools:
+  - Asterisk VoIP Server
+  - Linphone VoIP Client
 - **WiFi/Offloading** experiments:
   - Test WiFi quality
-  - 4G Offloading through Wi-Fi (upcoming)
+  - 4G Offloading through Wi-Fi
 
 ### Repository Structure
-* benchmarking : software extensions for data/video/voice testing
-  * clients : the client applications (loaded in MONROE nodes)
-  * servers: the server-side applications needed to perform the client tests (dockerized for easy deployment)
-* wifi-offloading/monroeap : software extensions related to wifi testing (setting MONROE node as AP and 4G/WiFi routing)
-
+* benchmarking : software extensions for data and video testing
+  * bench-node : the client applications (loaded in MONROE nodes)
+  * bench-server : the server-side applications needed to perform the client tests (dockerized for easy deployment)
+* voip : software extensions for voice-over-IP testing
+  * voip-node   : the client application loaded in MONROE nodes
+  * voip-server : the server-side applications needed to perform the client tests (dockerized for easy deployment)
+* wifi-offloading/monroeap : software extensions related to wifi testing
+  * Preparation of a docker image for enabling MONROE node to operate as WiFi Access Point and 4G/WiFi router
 
 <img src="movement.png" width="50%" height="50%"/>

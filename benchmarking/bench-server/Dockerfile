@@ -1,6 +1,6 @@
 FROM ubuntu:14.04
-
-MAINTAINER antonis.gotsis@feron-tech.com
+LABEL maintainer="Feron Technologies <info@feron-tech.com>"
+LABEL description="Benchmarking Server Components for MONROE OC1 Movement Project"
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
 wget \
@@ -38,4 +38,5 @@ service apache2 restart && \
 /home/multi_iperf3_server.sh && \
 /bin/bash
 
-# to load it: docker run --rm -idt --name servercn --privileged -p 8081:80 -p 8201-8204:5201-5204 movementexpserver
+# BUILD : docker build -t ferontech/bench-server .
+# RUN   : docker run --rm -idt --name bench-server-cn --privileged -p 8081:80 -p 8201-8204:5201-5204 ferontech/bench-server
