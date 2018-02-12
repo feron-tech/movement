@@ -129,7 +129,7 @@ def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, lo
 		except subprocess.CalledProcessError as e: # this is raised when timeout expires
 			timeoutExpired = True
 			output = e.output
-		logger.info((output))
+		#logger.info((output))
 
 		timestamp_end = time.time()
 		logger.info(("\t\tExperiment Ended   at (from current system time)  : {}").format(time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(timestamp_end))))
@@ -139,12 +139,19 @@ def curl_test(iface, experimentConfig, filename, sourceIPaddr, timeout, mode, lo
 		if timeoutExpired is True:
 			logger.info("\t\t[Timeout expired.]")
 			speed = results[0]
+			size = results[1]
 		else:
 			logger.info("\t\t[Timeout did not expire.]")
-			speed = results[1]
+			if mode == 'download':
+				speed = results[0]
+				size = results[1]
+			elif mode == 'upload':
+				speed = results[9]
+				size = results[10]
+				
+		# Calcs
 		[(m.start(0), m.end(0)) for m in re.finditer("resultSpeed=", speed)]
 		speed_Mbps = float(speed[m.end(0):].split(',')[0])*8/(1000**2)
-		size = results[1]
 		[(m.start(0), m.end(0)) for m in re.finditer("resultSize=", size)]
 		size_Mbytes = float(size[m.end(0):].split(',')[0])/(1000**2)
 		# print results
