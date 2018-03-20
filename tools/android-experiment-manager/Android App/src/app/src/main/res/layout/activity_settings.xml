@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.monroe.movement.experimentmgr.MyChildActivity">
+
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/child_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:minHeight="?attr/actionBarSize"
+        app:popupTheme="@style/AppTheme"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <TextView
+        android:id="@+id/child_textView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="MQTT Broker IP" />
+    <EditText
+        android:id="@+id/child_editText1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:hint="192.168.1.2" />
+
+    <TextView
+        android:id="@+id/child_textView2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="MQTT Broker Credentials" />
+    <EditText
+        android:id="@+id/child_editText2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:hint="username" />
+    <EditText
+        android:id="@+id/child_editText3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPassword"
+        android:hint="password" />
+
+    <TextView
+        android:id="@+id/child_textView3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="Node ID" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Spinner
+            android:id="@+id/child_spinner1"
+            android:layout_width="275dp"
+            android:layout_height="match_parent" />
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
+        <ImageButton
+            android:id="@+id/child_button_add"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:onClick="onButtonClick"
+            android:textSize="20sp"
+            android:background="@drawable/add" />
+        <ImageButton
+            android:id="@+id/child_button_remove"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:onClick="onButtonClick"
+            android:textSize="20sp"
+            android:background="@drawable/remove"/>
+
+    </LinearLayout>
+    <Button
+        android:id="@+id/child_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="OK"
+        android:onClick="onButtonClick"/>
+
+</LinearLayout>
