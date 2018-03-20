@@ -17,6 +17,10 @@ The repository contains a set of sub-projects/experiments for measuring the qual
   - Test WiFi quality
   - 4G Offloading through Wi-Fi
 
+Except for the primary software tools shown above we also provide two additional extensions helping MONROE experimenters to:
+* Control experiments using a Smartphone application and an MQTT-based messaging framework;
+* Perform automated mobile-to-mobile VoLTE test call and analysis using VoLTE-enabled smartphones.
+
 ### Repository Structure
 * benchmarking : software extensions for data and video testing
   * bench-node : the client applications (loaded in MONROE nodes)
@@ -24,7 +28,11 @@ The repository contains a set of sub-projects/experiments for measuring the qual
 * voip : software extensions for voice-over-IP testing
   * voip-node   : the client application loaded in MONROE nodes
   * voip-server : the server-side applications needed to perform the client tests (dockerized for easy deployment)
-* wifi-offloading/monroeap : software extensions related to wifi testing
-  * Preparation of a docker image for enabling MONROE node to operate as WiFi Access Point and 4G/WiFi router
+* wifi-offloading : software extensions related to wifi testing
+  * monroeap : Preparation of a docker image for enabling MONROE node to operate as WiFi Access Point and 4G/WiFi router
+  * zte : 4G/WiFi offloading tests using the ZTE MF-910 MiFi devices of MONROE hardware v1.
+* tools: other extensions not belonging to the above categories
+  * android-experiment-manager: MQTT-based framework to easily control MONROE experimentation process (configure, initiate, monitor, store results) using a smartphone app.
+  * volte-testing: scripts for automatically performing  mobile-to-mobile VoLTE test calls in VoLTE-enabled smartphones and analyze recorded audio samples.  
 
 <img src="movement.png" width="50%" height="50%"/>
