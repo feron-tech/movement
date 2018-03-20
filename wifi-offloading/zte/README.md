@@ -15,4 +15,4 @@ The implementation of 4G-WiFi offloading requires two steps:
 
 The experimental setup is shown in the following Figure.
 
-<img src="mqttMGR.png" width="50%" height="50%"/> 
+<img src="zte.png" width="60%" height="60%"/> 
