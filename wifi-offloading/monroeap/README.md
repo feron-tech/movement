@@ -12,7 +12,7 @@ iptables -t nat -A POSTROUTING -o usb0 -j MASQUERADE
 iptables -A FORWARD -i usb0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A FORWARD -i wlan0 -o usb0 -j ACCEPT
 ```
-<img src="monroeap.png" width="50%" height="50%"/> 
+<img src="monroeap.png" width="65%" height="65%"/>
 
 #### Prepare & Build an all-in-one image
 ##### BASE
