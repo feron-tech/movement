@@ -10,10 +10,10 @@
 filepath=$(dirname "$(readlink -f "$0")")
 cd $filepath
 
-#=========== INPUT =========================
-SERVER_IP="*.*.*.*"  # VoIP server
-NROUNDS=2 # number of rounds
-#=========== INPUT =========================
+# read config
+source ./experiment.cfg
+echo "Server IP    : $SERVER_IP"
+echo "Num of rounds: $NROUNDS"
 
 available_interf=($(ls /sys/class/net)) # find available interfaces
 acceptable_interf=( eth0 usb0 op0 wwan0 usb1 op1 wwan1 usb2 op2 wwan2 wlan0 ) # array of acceptable interfaces

@@ -66,6 +66,7 @@ if [ $rc -eq 0 ]; then
 		(cat temp.txt | tee >(echo "MOS-LQO: " $(awk '{ print $8 }')) >(echo "Raw MOS: " $(awk '{ print $7 }')) | tail -2) > output.txt
 		# wait for the voip_packet_capture.py
 		wait ${ppid1}
+		echo "aaaaaaaaaa"
 		echo -e "\n"
 		tail -5 voip_packet_capture.log >> output.txt
 		cat output.txt

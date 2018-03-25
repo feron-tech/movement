@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background3"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:showDividers="middle"
+    android:divider="@drawable/empty_tall_divider"
+    tools:context="com.monroe.movement.experimentmgr.MainActivity">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@color/colorPrimary"
+        android:minHeight="?attr/actionBarSize"
+        app:popupTheme="@style/AppTheme"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="110dp"
+        android:layout_height="42dp"
+        android:layout_column="1"
+        android:layout_row="0"
+        app:layout_constraintHorizontal_bias="0.502"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:srcCompat="@drawable/monroe_movement"
+        tools:layout_editor_absoluteY="1dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@android:color/darker_gray"/>
+
+    <TextView
+        android:id="@+id/editTextD1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:textColor="@android:color/white"
+        android:text="Docker Manager"
+        android:textStyle="bold"
+        android:textSize="15dp"
+        android:paddingLeft="10px"
+        android:textColor="#ffffff"/>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="10px"
+        android:paddingBottom="10px"
+        android:paddingLeft="60px"
+        android:paddingRight="60px">
+        <Button
+            android:id="@+id/buttonD1"
+            style="@style/Widget.AppCompat.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="1"
+            android:minHeight="40dp"
+            android:background="@drawable/button_bg_rounded_corners"
+            android:elevation="0dp"
+            android:onClick="clickButtonD1"
+            android:text="Start Docker"
+            android:textAllCaps="false"
+            app:layout_constraintBottom_toBottomOf="@+id/button2"
+            app:layout_constraintTop_toTopOf="@+id/button2"
+            app:layout_constraintVertical_bias="1.0"
+            tools:layout_editor_absoluteX="255dp" />
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
+        <Button
+            android:id="@+id/buttonD2"
+            style="@style/Widget.AppCompat.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="40dp"
+            android:background="@drawable/button_bg_rounded_corners"
+            android:elevation="0dp"
+            android:onClick="clickButtonD2"
+            android:text="Stop Docker"
+            android:textAllCaps="false"
+            app:layout_constraintBottom_toBottomOf="@+id/button1"
+            app:layout_constraintTop_toTopOf="@+id/button1"
+            tools:layout_editor_absoluteX="136dp" />
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
+        <Button
+            android:id="@+id/buttonD3"
+            style="@style/Widget.AppCompat.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="2"
+            android:layout_row="4"
+            android:minHeight="40dp"
+            android:background="@drawable/button_bg_rounded_corners"
+            android:elevation="0dp"
+            android:onClick="clickButtonD3"
+            android:text="Docker PS"
+            android:textAllCaps="false"
+            tools:layout_editor_absoluteX="9dp"
+            tools:layout_editor_absoluteY="131dp" />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingBottom="10px"
+        android:paddingLeft="20px"
+        android:paddingRight="20px"
+        android:paddingTop="10px">
+
+        <ToggleButton
+            android:id="@+id/toggleButtonD1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:onClick="onToggleClickedD1"
+            android:text="ToggleButton"
+            android:textAllCaps="false"
+            android:textOff="DockerFB Sub"
+            android:textOn="DockerFB Sub"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@+id/textView1"
+            tools:layout_editor_absoluteY="195dp" />
+
+        <Space
+            android:layout_width="10dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"></Space>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textViewD1"
+                android:layout_width="227dp"
+                android:layout_height="40dp"
+                android:background="#8000"
+                android:gravity="bottom"
+                android:scrollbars="vertical"
+                android:text="Docker Feedback:\n"
+                android:textColor="@android:color/holo_green_light"
+                app:layout_constraintLeft_toRightOf="@+id/toggleButton1"
+                app:layout_constraintRight_toRightOf="parent"
+                tools:layout_editor_absoluteY="195dp" />
+
+            <Button
+                android:id="@+id/buttonD4"
+                style="@style/Widget.AppCompat.Button"
+                android:layout_width="fill_parent"
+                android:layout_height="22dp"
+                android:elevation="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:onClick="clickButtonD4"
+                android:paddingBottom="0dp"
+                android:paddingLeft="0dp"
+                android:paddingRight="0dp"
+                android:paddingTop="0dp"
+                android:layout_marginLeft="-5dp"
+                android:layout_marginRight="-5dp"
+                android:layout_marginTop="-5dp"
+                android:layout_marginBottom="-5dp"
+                android:text="clear"
+                android:textAllCaps="false"
+                android:textSize="10dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@android:color/darker_gray"/>
+
+    <TextView
+        android:id="@+id/editTextE1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:textColor="@android:color/white"
+        android:text="Experiment Manager"
+        android:paddingTop="10px"
+        android:paddingLeft="10px"
+        android:textStyle="bold"
+        android:textSize="15dp"
+        android:textColor="#ffffff" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="10px"
+        android:paddingBottom="10px"
+        android:paddingLeft="10px"
+        android:paddingRight="10px">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/textViewN1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:textColor="@android:color/white"
+                android:text="Node"
+                android:paddingTop="10px"
+                android:paddingLeft="10px"
+                android:textSize="15dp"
+                android:textColor="#ffffff" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingTop="30px"
+                android:paddingBottom="50px">
+            <Button
+                android:id="@+id/buttonE1"
+                style="@style/Widget.AppCompat.Button"
+                android:layout_width="52dp"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="1"
+                android:minHeight="40dp"
+                android:background="@drawable/button"
+                android:elevation="0dp"
+                android:onClick="clickButtonE1"
+                android:text="Start"
+                android:textAllCaps="false"
+                android:textColor="#ffffff"
+                app:layout_constraintBottom_toBottomOf="@+id/button2"
+                app:layout_constraintTop_toTopOf="@+id/button2"
+                app:layout_constraintVertical_bias="1.0"
+                tools:layout_editor_absoluteX="255dp" />
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" >
+            </Space>
+            <Button
+                android:id="@+id/buttonE2"
+                style="@style/Widget.AppCompat.Button"
+                android:layout_width="52dp"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:background="@drawable/button"
+                android:elevation="0dp"
+                android:onClick="clickButtonE2"
+                android:text="Stop"
+                android:textColor="#ffffff"
+                android:textAllCaps="false"
+                app:layout_constraintBottom_toBottomOf="@+id/button1"
+                app:layout_constraintTop_toTopOf="@+id/button1"
+                tools:layout_editor_absoluteX="136dp" />
+            </LinearLayout>
+        </LinearLayout>
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" >
+        </Space>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <CheckBox
+                android:id="@+id/checkBox1"
+                android:layout_width="100dp"
+                android:layout_height="15dp"
+                android:checked="true"
+                android:scaleX="0.80"
+                android:scaleY="0.80"
+                android:textColor="#ffffff"
+                android:text="ping"
+                android:buttonTint="@android:color/white"/>
+
+            <CheckBox
+                android:id="@+id/checkBox2"
+                android:layout_width="100dp"
+                android:layout_height="15dp"
+                android:scaleX="0.80"
+                android:scaleY="0.80"
+                android:textColor="#ffffff"
+                android:text="iperf3_dl"
+                android:buttonTint="@android:color/white"/>
+
+            <CheckBox
+                android:id="@+id/checkBox3"
+                android:layout_width="100dp"
+                android:layout_height="15dp"
+                android:scaleX="0.80"
+                android:scaleY="0.80"
+                android:textColor="#ffffff"
+                android:text="iperf3_ul"
+                android:buttonTint="@android:color/white"/>
+            <CheckBox
+                android:id="@+id/checkBox4"
+                android:layout_width="100dp"
+                android:layout_height="15dp"
+                android:text="curl_dl"
+                android:scaleX="0.80"
+                android:scaleY="0.80"
+                android:textColor="#ffffff"
+                android:buttonTint="@android:color/white"/>
+            <CheckBox
+                android:id="@+id/checkBox5"
+                android:layout_width="100dp"
+                android:layout_height="15dp"
+                android:text="curl_ul"
+                android:scaleX="0.80"
+                android:scaleY="0.80"
+                android:textColor="#ffffff"
+                android:buttonTint="@android:color/white"/>
+            <CheckBox
+                android:id="@+id/checkBox6"
+                android:layout_width="100dp"
+                android:layout_height="15dp"
+                android:text="video"
+                android:scaleX="0.80"
+                android:scaleY="0.80"
+                android:textColor="#ffffff"
+                android:buttonTint="@android:color/white"/>
+            <CheckBox
+                android:id="@+id/checkBox7"
+                android:layout_width="100dp"
+                android:layout_height="15dp"
+                android:checked="true"
+                android:text="speedtest"
+                android:scaleX="0.80"
+                android:scaleY="0.80"
+                android:textColor="#ffffff"
+                android:buttonTint="@android:color/white"/>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <TextView
+                android:id="@+id/editTextE2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="x"
+                android:textColor="#ffffff" />
+            <EditText
+                android:id="@+id/editTextE3"
+                android:layout_width="30dp"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="number"
+                android:scaleX="0.90"
+                android:scaleY="0.90"
+                android:text="2"
+                android:textColor="#ffffff"
+                android:backgroundTint="@color/colorPrimary"/>
+
+            <CheckBox
+                android:id="@+id/checkBox8"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:buttonTint="@color/colorPrimary"
+                android:scaleX="0.90"
+                android:scaleY="0.90"
+                android:text="save to DB"
+                android:textColor="#ffffff" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="10px"
+        android:paddingBottom="10px"
+        android:paddingLeft="20px"
+        android:paddingRight="20px">
+        <ToggleButton
+            android:id="@+id/toggleButtonE1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:onClick="onToggleClickedE1"
+            android:text="ToggleButton"
+            android:textOff="ExpFB Sub"
+            android:textOn="ExpFB Sub"
+            android:textAllCaps="false"
+            tools:layout_editor_absoluteY="195dp"
+            app:layout_constraintRight_toLeftOf="@+id/textView2"
+            app:layout_constraintLeft_toLeftOf="parent" />
+        <Space
+            android:layout_width="10dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" >
+        </Space>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/textViewE1"
+                android:layout_width="238dp"
+                android:layout_height="92dp"
+                android:background="#8000"
+                android:gravity="bottom"
+                android:scrollbars="vertical"
+                android:text="Experiment Feedback:\n"
+                android:textColor="@android:color/holo_green_light"
+                tools:layout_editor_absoluteX="148dp"
+                tools:layout_editor_absoluteY="442dp" />
+
+            <Button
+                android:id="@+id/buttonE3"
+                style="@style/Widget.AppCompat.Button"
+                android:layout_width="fill_parent"
+                android:layout_height="22dp"
+                android:elevation="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:onClick="clickButtonE3"
+                android:paddingBottom="0dp"
+                android:paddingLeft="0dp"
+                android:paddingRight="0dp"
+                android:paddingTop="0dp"
+                android:layout_marginLeft="-5dp"
+                android:layout_marginRight="-5dp"
+                android:layout_marginTop="-5dp"
+                android:layout_marginBottom="-5dp"
+                android:text="clear"
+                android:textAllCaps="false"
+                android:textSize="10dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+
+</LinearLayout>

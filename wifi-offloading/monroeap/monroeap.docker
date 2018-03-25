@@ -23,8 +23,5 @@ RUN make clean && make
 # dnsmasq
 RUN cp /home/dnsmasq.conf /etc/dnsmasq.conf
 
-ENTRYPOINT \
-service dnsmasq restart && \
-/home/routing.sh && \
-./hostapd ./hostapd.conf && \
-/bin/bash
+ENTRYPOINT service dnsmasq restart && /home/routing.sh && ./hostapd ./hostapd.conf && /bin/bash
+# ENTRYPOINT /bin/bash
